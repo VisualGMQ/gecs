@@ -1,7 +1,5 @@
 #pragma once
 
-#include "config.hpp"
-
 #include <type_traits>
 
 namespace gecs {
@@ -9,8 +7,6 @@ namespace gecs {
 namespace internal {
 
 #define ECS_ASSERT(x) assert(x)
-
-inline constexpr uint32_t PageSize = 4096;
 
 template<typename Type>
 static constexpr int popcount(Type value) noexcept {
@@ -36,36 +32,57 @@ struct entity_traits<uint32_t> {
     static constexpr uint32_t entity_mask_popcount = popcount(entity_mask);
 };
 
+//! @brief convert entity to it's underlying numeric type
+//! @tparam EntityT 
+//! @param entity 
+//! @return 
 template <typename EntityT>
 constexpr auto entity_to_integral(EntityT entity) {
     using traits = entity_traits<EntityT>;
     return static_cast<traits::entity_type>(entity);
 }
 
+//! @brief get entity id number
+//! @tparam EntityT 
+//! @param entity 
+//! @return 
 template <typename EntityT>
 constexpr auto entity_id(EntityT entity) {
     using traits = entity_traits<EntityT>;
     return entity_to_integral(entity) & traits::entity_mask;
 }
 
+//! @brief get entity version number
+//! @tparam EntityT 
+//! @param entity 
+//! @return 
 template <typename EntityT>
 constexpr auto entity_version(EntityT entity) {
     using traits = entity_traits<EntityT>;
-    return entity_to_integral(entity) >> traits::entity_mask_popcunt;
+    return entity_to_integral(entity) >> traits::entity_mask_popcount;
 }
 
+//! @brief return the next version of the entity
+//! @tparam EntityT 
+//! @param entity 
+//! @return 
 template <typename EntityT>
 constexpr auto entity_next_version(EntityT entity) {
     using traits = entity_traits<EntityT>;
-    auto version = entity_to_integral(entity) >> traits::entity_mask_popcunt;
+    auto version = entity_to_integral(entity) >> traits::entity_mask_popcount;
     return version + 1 + (version == traits::version_mask);
 }
 
+//! @brief construct a entity by version and id
+//! @tparam EntityT 
+//! @param version 
+//! @param id 
+//! @return 
 template <typename EntityT>
-constexpr auto construct_entity(typename entity_traits<EntityT>::version_mask_type version,
-                               typename entity_traits<EntityT>::entity_mask_type id) {
+constexpr EntityT construct_entity(typename entity_traits<EntityT>::version_mask_type version,
+                                    typename entity_traits<EntityT>::entity_mask_type id) {
     using traits = entity_traits<EntityT>;
-    return ((version << traits::entity_mask_popcount) & traits::version_mask) | (id & traits::entity_mask);
+    return static_cast<EntityT>(((version & traits::version_mask)  << traits::entity_mask_popcount) | (id & traits::entity_mask));
 }
 
 //! @brief combine two entities
@@ -74,9 +91,18 @@ constexpr auto construct_entity(typename entity_traits<EntityT>::version_mask_ty
 //! @param rhs pick the id of this entity
 //! @return 
 template <typename EntityT>
-constexpr auto combine_entity(EntityT lhs, EntityT rhs) {
+constexpr EntityT combine_entity(EntityT lhs, EntityT rhs) {
     using traits = entity_traits<EntityT>;
-    return (lhs & traits::version_mask) | (rhs & traits::entity_mask);
+    return static_cast<EntityT>((entity_to_integral(lhs) & (traits::version_mask << traits::entity_mask_popcount)) | (entity_to_integral(rhs) & traits::entity_mask));
+}
+
+//! @brief increase the entity's version by 1 and return it
+//! @tparam EntityT 
+//! @param entity 
+//! @return entity
+template <typename EntityT>
+constexpr auto entity_inc_version(EntityT entity) {
+    return construct_entity<EntityT>(entity_next_version(entity), entity_id(entity));
 }
 
 struct null_entity_t final {

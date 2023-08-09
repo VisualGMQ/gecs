@@ -32,7 +32,7 @@ public:
     }
 
     constexpr reference operator*() const noexcept {
-        return *opertor->();
+        return *operator->();
     }
 
     constexpr difference_type index() const noexcept {
@@ -60,22 +60,30 @@ public:
         return operator+(-step);
     }
 
-    constexpr sparse_set_iterator& operator++(int) noexcept {
-        return ++offset_, *this;
-    }
-
-    constexpr sparse_set_iterator operator++() noexcept {
+    constexpr sparse_set_iterator operator++(int) noexcept {
         sparse_set_iterator copy = *this;
         return ++(*this), copy;
     }
 
-    constexpr sparse_set_iterator& operator--(int) noexcept {
+    constexpr sparse_set_iterator& operator++() noexcept {
         return --offset_, *this;
     }
 
-    constexpr sparse_set_iterator operator--() noexcept {
+    constexpr sparse_set_iterator operator--(int) noexcept {
         sparse_set_iterator copy = *this;
         return --(*this), copy;
+    }
+
+    constexpr sparse_set_iterator& operator--() noexcept {
+        return ++offset_, *this;
+    }
+    
+    constexpr bool operator==(const sparse_set_iterator& o) const noexcept {
+        return o.container_ == container_ && o.offset_ == offset_;
+    }
+
+    constexpr bool operator!=(const sparse_set_iterator& o) const noexcept {
+        return !(*this == o);
     }
 
     constexpr reference operator[](const difference_type index) const noexcept {
@@ -92,6 +100,7 @@ private:
 template <typename EntityT, size_t PageSize>
 class basic_sparse_set {
 public:
+    using type = basic_sparse_set;
     using entity_type = typename internal::entity_traits<EntityT>::entity_type;
 
     using packed_container_type = std::vector<entity_type>;
@@ -100,24 +109,48 @@ public:
     using size_type = typename packed_container_type::size_type;
     static constexpr typename page_type::value_type null_sparse_data = std::numeric_limits<typename page_type::value_type>::max();
 
-    void insert(EntityT entity) {
+    EntityT insert(EntityT entity) {
+        using traits = internal::entity_traits<EntityT>;
+        ECS_ASSERT(traits::entity_mask != internal::entity_id(entity));
+
         auto id = internal::entity_id(entity);
         packed_.push_back(internal::entity_to_integral(entity));
         assure(page(id))[offset(id)] = packed_.size() - 1u;
+        return internal::construct_entity<EntityT>(0, static_cast<traits::entity_mask_type>(packed_.size() - 1u));
     }
 
     void remove(EntityT entity) {
-        auto id = internal::entity_id(entity);
-        auto page = this->page(id);
-        if (page >= sparse_.size()) {
+        if (!contain(entity)) {
             return;
         }
-        auto& posRef = sparse_[page][offset(id)];
-        auto pos = posRef;
-        posRef = null_sparse_data;
+
+        auto id = internal::entity_id(entity);
+        auto& ref = sparse_ref(id);
+        auto pos = ref;
+        ref = null_sparse_data;
         packed_[pos] = std::move(packed_.back());
         packed_.pop_back();
-        sparse_ref(packed_[pos]) = pos;
+        sparse_ref(internal::entity_id(packed_[pos])) = pos;
+    }
+
+    void remove_back() {
+        if (empty()) {
+            return;
+        }
+
+        auto id = internal::entitiy_id(packed_.back());
+        sparse_ref(id) = null_sparse_data;
+        packed_.pop_back();
+    }
+
+    //! @brief pump a entity to end and return it
+    entity_type& pump(EntityT entity) {
+        auto id = internal::entity_id(entity);
+        auto& ref1 = sparse_ref(id);
+        auto& ref2 = sparse_ref(internal::entity_id(packed_.back()));
+        std::swap(packed_.back(), packed_[ref1]);
+        std::swap(ref1, ref2);
+        return packed_.back();
     }
 
     size_t index(EntityT entity) const {
@@ -130,7 +163,7 @@ public:
     bool contain(EntityT entity) const {
         auto id = internal::entity_id(entity);
         auto page = this->page(id);
-        if (page > sparse_.size()) {
+        if (page >= sparse_.size()) {
             return false;
         } else {
             auto pos = sparse_[page][offset(id)];
@@ -139,11 +172,11 @@ public:
     }
 
     auto begin() const {
-        return internal::sparse_set_iterator<basic_sparse_set<EntityT>>{&packed_, packed_.size()};
+        return internal::sparse_set_iterator<type>{&packed_, static_cast<internal::sparse_set_iterator<type>::difference_type>(packed_.size())};
     }
 
     auto end() const {
-        return internal::sparse_set_iterator<basic_sparse_set<EntityT>>{&packed_, 0};
+        return internal::sparse_set_iterator<type>{&packed_, 0};
     }
 
     auto cend() const {
@@ -154,12 +187,20 @@ public:
         return begin();
     }
 
-    auto crbegin() const {
+    auto rbegin() const {
+        return std::make_reverse_iterator(end());
+    }
+
+    auto rend() const {
         return std::make_reverse_iterator(begin());
     }
 
+    auto crbegin() const {
+        return rbegin();
+    }
+
     auto crend() const {
-        return std::make_reverse_iterator(end());
+        return rend();
     }
 
     auto size() const {
@@ -188,6 +229,26 @@ public:
         packed_.reserve(size);
     }
 
+    const EntityT& back() const {
+        return packed_.back();
+    }
+
+    auto data() const {
+        return packed_.data();
+    }
+
+    auto data() {
+        return std::as_const(*this).data();
+    }
+
+    EntityT& back() {
+        return const_cast<Entity&>(std::as_const(*this).back());
+    }
+
+    internal::sparse_set_iterator<basic_sparse_set> find(EntityT entity) {
+        return {this, index(entity)};
+    }
+
     virtual ~basic_sparse_set() = default;
 
 private:
@@ -208,8 +269,7 @@ private:
     }
 
     const size_t& sparse_ref(entity_type id) const {
-        auto page = this->page(id);
-        return sparse_[page][offset(id)];
+        return sparse_[page(id)][offset(id)];
     }
 
     size_t* sparse_ptr(entity_type id) {
