@@ -77,7 +77,7 @@ public:
     constexpr sparse_set_iterator& operator--() noexcept {
         return ++offset_, *this;
     }
-    
+
     constexpr bool operator==(const sparse_set_iterator& o) const noexcept {
         return o.container_ == container_ && o.offset_ == offset_;
     }
@@ -108,6 +108,8 @@ public:
     using sparse_container_type = std::vector<page_type>;
     using size_type = typename packed_container_type::size_type;
     static constexpr typename page_type::value_type null_sparse_data = std::numeric_limits<typename page_type::value_type>::max();
+    using iterator = internal::sparse_set_iterator<basic_sparse_set<EntityT, PageSize>>;
+    using const_iterator = iterator;
 
     EntityT insert(EntityT entity) {
         using traits = internal::entity_traits<EntityT>;
@@ -145,6 +147,8 @@ public:
 
     //! @brief pump a entity to end and return it
     entity_type& pump(EntityT entity) {
+        ECS_ASSERT(!empty());
+
         auto id = internal::entity_id(entity);
         auto& ref1 = sparse_ref(id);
         auto& ref2 = sparse_ref(internal::entity_id(packed_.back()));
@@ -171,19 +175,27 @@ public:
         }
     }
 
-    auto begin() const {
+    const_iterator begin() const {
         return internal::sparse_set_iterator<type>{&packed_, static_cast<internal::sparse_set_iterator<type>::difference_type>(packed_.size())};
     }
 
-    auto end() const {
+    const_iterator end() const {
         return internal::sparse_set_iterator<type>{&packed_, 0};
     }
 
-    auto cend() const {
+    iterator begin() {
+        return const_cast<iterator&&>(std::as_const(*this).begin());
+    }
+
+    iterator end() {
+        return const_cast<iterator&&>(std::as_const(*this).end());
+    }
+
+    const_iterator cend() const {
         return end();
     }
 
-    auto cbegin() const {
+    const_iterator cbegin() const {
         return begin();
     }
 

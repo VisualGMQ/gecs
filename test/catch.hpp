@@ -2703,37 +2703,37 @@ struct ratio_string<std::milli> {
 
 ////////////
 // std::chrono::duration specializations
-template <typename Value, typename Ratio>
-struct StringMaker<std::chrono::duration<Value, Ratio>> {
+template <typename Second, typename Ratio>
+struct StringMaker<std::chrono::duration<Second, Ratio>> {
     static std::string convert(
-        std::chrono::duration<Value, Ratio> const& duration) {
+        std::chrono::duration<Second, Ratio> const& duration) {
         ReusableStringStream rss;
         rss << duration.count() << ' ' << ratio_string<Ratio>::symbol() << 's';
         return rss.str();
     }
 };
-template <typename Value>
-struct StringMaker<std::chrono::duration<Value, std::ratio<1>>> {
+template <typename Second>
+struct StringMaker<std::chrono::duration<Second, std::ratio<1>>> {
     static std::string convert(
-        std::chrono::duration<Value, std::ratio<1>> const& duration) {
+        std::chrono::duration<Second, std::ratio<1>> const& duration) {
         ReusableStringStream rss;
         rss << duration.count() << " s";
         return rss.str();
     }
 };
-template <typename Value>
-struct StringMaker<std::chrono::duration<Value, std::ratio<60>>> {
+template <typename Second>
+struct StringMaker<std::chrono::duration<Second, std::ratio<60>>> {
     static std::string convert(
-        std::chrono::duration<Value, std::ratio<60>> const& duration) {
+        std::chrono::duration<Second, std::ratio<60>> const& duration) {
         ReusableStringStream rss;
         rss << duration.count() << " m";
         return rss.str();
     }
 };
-template <typename Value>
-struct StringMaker<std::chrono::duration<Value, std::ratio<3600>>> {
+template <typename Second>
+struct StringMaker<std::chrono::duration<Second, std::ratio<3600>>> {
     static std::string convert(
-        std::chrono::duration<Value, std::ratio<3600>> const& duration) {
+        std::chrono::duration<Second, std::ratio<3600>> const& duration) {
         ReusableStringStream rss;
         rss << duration.count() << " h";
         return rss.str();
