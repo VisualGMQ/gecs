@@ -129,10 +129,10 @@ public:
         auto id = internal::entity_id(entity);
         auto& ref = sparse_ref(id);
         auto pos = ref;
-        ref = null_sparse_data;
         packed_[pos] = std::move(packed_.back());
-        packed_.pop_back();
         sparse_ref(internal::entity_id(packed_[pos])) = pos;
+        ref = null_sparse_data;
+        packed_.pop_back();
     }
 
     void remove_back() {

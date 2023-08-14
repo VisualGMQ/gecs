@@ -95,6 +95,14 @@ TEST_CASE("insert and remove") {
         REQUIRE(set.size() == 1);
         REQUIRE(!set.empty());
 
+        set.remove(Entity(4));
+        REQUIRE_FALSE(set.contain(Entity(4)));
+        REQUIRE(set.size() == 0);
+        REQUIRE(set.empty());
+
+        set.insert(Entity(1));
+        set.insert(Entity(2));
+
         set.clear();
         REQUIRE(set.size() == 0);
         REQUIRE(set.empty());

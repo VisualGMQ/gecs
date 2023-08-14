@@ -35,6 +35,7 @@ inline bool operator!=(uint64_t num, Entity e) {
     return !(e == num);
 }
 
+using id_type = size_t;
 
 }
 
