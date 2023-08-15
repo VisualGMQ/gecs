@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config/config.hpp"
+#include "gecs/config/config.hpp"
 
 namespace gecs {
 
@@ -9,13 +9,13 @@ public:
     using value_type = config::id_type;
 
     template <typename Type>
-    value_type gen() noexcept {
+    static value_type gen() noexcept {
         static value_type value = curr_ ++;
         return value;
     }
 
 private:
-    static value_type curr_ = {};
+    inline static value_type curr_ = {};
 };
 
 }

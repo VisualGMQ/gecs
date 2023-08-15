@@ -31,6 +31,9 @@ TEST_CASE("pure entity storage") {
     REQUIRE(entity == internal::construct_entity<config::Entity>(1, 1));
     REQUIRE(storage.size() == 2);
     REQUIRE(storage.base_size() == 2);
+
+    REQUIRE_FALSE(storage.contain(Entity(1)));
+    REQUIRE(storage.contain(entity));
 }
 
 struct Vector2 {
@@ -78,6 +81,13 @@ TEST_CASE("storage") {
     begin ++;
     REQUIRE(begin == storage.end());
 
-    storage.remove(Entity(4));
-    REQUIRE_FALSE(storage.contain(Entity(4)));
+    storage.remove(Entity(2));
+    REQUIRE_FALSE(storage.contain(Entity(2)));
+    REQUIRE(**storage.find(Entity(4)) == v3);
+    REQUIRE(**storage.find(Entity(0)) == v);
+    REQUIRE(storage[Entity(4)] == v3);
+    REQUIRE(storage[Entity(0)] == v);
+    storage.remove(Entity(0));
+    REQUIRE(**storage.find(Entity(4)) == v3);
+    REQUIRE(storage.find(Entity(0)) == storage.end());
 }

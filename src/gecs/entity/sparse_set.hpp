@@ -111,7 +111,7 @@ public:
     using iterator = internal::sparse_set_iterator<basic_sparse_set<EntityT, PageSize>>;
     using const_iterator = iterator;
 
-    EntityT insert(EntityT entity) {
+    EntityT insert(EntityT entity) noexcept {
         using traits = internal::entity_traits<EntityT>;
         ECS_ASSERT(traits::entity_mask != internal::entity_id(entity));
 
@@ -121,7 +121,7 @@ public:
         return internal::construct_entity<EntityT>(0, static_cast<traits::entity_mask_type>(packed_.size() - 1u));
     }
 
-    void remove(EntityT entity) {
+    virtual void remove(EntityT entity) noexcept {
         if (!contain(entity)) {
             return;
         }
@@ -135,7 +135,7 @@ public:
         packed_.pop_back();
     }
 
-    void remove_back() {
+    void remove_back() noexcept {
         if (empty()) {
             return;
         }
@@ -146,7 +146,7 @@ public:
     }
 
     //! @brief pump a entity to end and return it
-    entity_type& pump(EntityT entity) {
+    entity_type& pump(EntityT entity) noexcept {
         ECS_ASSERT(!empty());
 
         auto id = internal::entity_id(entity);
@@ -157,108 +157,112 @@ public:
         return packed_.back();
     }
 
-    size_t index(EntityT entity) const {
+    size_t index(EntityT entity) const noexcept {
         auto id = internal::entity_id(entity);
         auto page = this->page(id);
         ECS_ASSERT(page < sparse_.size());
         return sparse_[page][offset(id)];
     }
 
-    bool contain(EntityT entity) const {
+    bool contain(EntityT entity) const noexcept {
         auto id = internal::entity_id(entity);
         auto page = this->page(id);
         if (page >= sparse_.size()) {
             return false;
         } else {
             auto pos = sparse_[page][offset(id)];
-            return pos != null_sparse_data && packed_[pos] != internal::null_entity;
+            return pos != null_sparse_data && packed_[pos] != internal::null_entity && packed_[pos] == entity;
         }
     }
 
-    const_iterator begin() const {
+    const_iterator begin() const noexcept {
         return internal::sparse_set_iterator<type>{&packed_, static_cast<internal::sparse_set_iterator<type>::difference_type>(packed_.size())};
     }
 
-    const_iterator end() const {
+    const_iterator end() const noexcept {
         return internal::sparse_set_iterator<type>{&packed_, 0};
     }
 
-    iterator begin() {
+    iterator begin() noexcept {
         return const_cast<iterator&&>(std::as_const(*this).begin());
     }
 
-    iterator end() {
+    iterator end() noexcept {
         return const_cast<iterator&&>(std::as_const(*this).end());
     }
 
-    const_iterator cend() const {
+    const_iterator cend() const noexcept {
         return end();
     }
 
-    const_iterator cbegin() const {
+    const_iterator cbegin() const noexcept {
         return begin();
     }
 
-    auto rbegin() const {
+    auto rbegin() const noexcept {
         return std::make_reverse_iterator(end());
     }
 
-    auto rend() const {
+    auto rend() const noexcept {
         return std::make_reverse_iterator(begin());
     }
 
-    auto crbegin() const {
+    auto crbegin() const noexcept {
         return rbegin();
     }
 
-    auto crend() const {
+    auto crend() const noexcept {
         return rend();
     }
 
-    auto size() const {
+    auto size() const noexcept {
         return packed_.size();
     }
 
-    auto capacity() const {
+    auto capacity() const noexcept {
         return packed_.capacity();
     }
 
-    auto shrink_to_fit() {
+    auto shrink_to_fit() noexcept {
         packed_.shrink_to_fit();
         sparse_.shrink_to_fit();
     }
 
-    void clear() {
+    void clear() noexcept {
         packed_.clear();
         sparse_.clear();
     }
 
-    bool empty() const {
+    bool empty() const noexcept {
         return packed_.empty();
     }
 
-    void reserve(size_type size) {
+    void reserve(size_type size) noexcept {
         packed_.reserve(size);
     }
 
-    const EntityT& back() const {
+    const EntityT& back() const noexcept {
         return packed_.back();
     }
 
-    auto data() const {
+    auto data() const noexcept {
         return packed_.data();
     }
 
-    auto data() {
+    auto data() noexcept {
         return std::as_const(*this).data();
     }
 
-    EntityT& back() {
+    EntityT& back() noexcept {
         return const_cast<Entity&>(std::as_const(*this).back());
     }
 
-    internal::sparse_set_iterator<basic_sparse_set> find(EntityT entity) {
+    internal::sparse_set_iterator<basic_sparse_set> find(EntityT entity) noexcept {
         return {this, index(entity)};
+    }
+
+    const packed_container_type& packed() const noexcept {
+        return packed_;
     }
 
     virtual ~basic_sparse_set() = default;
@@ -267,32 +271,32 @@ private:
     packed_container_type packed_;
     sparse_container_type sparse_;
 
-    size_t page(entity_type id) const {
+    size_t page(entity_type id) const noexcept {
         return id / PageSize;
     }
 
-    size_t offset(entity_type id) const {
+    size_t offset(entity_type id) const noexcept {
         return id % PageSize;
     }
     
-    const size_t* sparse_ptr(entity_type id) const {
+    const size_t* sparse_ptr(entity_type id) const noexcept {
         auto page = this->page(id);
         return page < sparse_.size() ? &sparse_[page][offset(id)] : nullptr;
     }
 
-    const size_t& sparse_ref(entity_type id) const {
+    const size_t& sparse_ref(entity_type id) const noexcept {
         return sparse_[page(id)][offset(id)];
     }
 
-    size_t* sparse_ptr(entity_type id) {
+    size_t* sparse_ptr(entity_type id) noexcept {
         return const_cast<size_t*>(std::as_const(*this).sparse_ptr(id));
     }
 
-    size_t& sparse_ref(entity_type id) {
+    size_t& sparse_ref(entity_type id) noexcept {
         return const_cast<size_t&>(std::as_const(*this).sparse_ref(id));
     }
 
-    auto& assure(size_type page) {
+    auto& assure(size_type page) noexcept {
         if (page >= sparse_.size()) {
             auto old_size = sparse_.size();
             sparse_.resize(page + 1u);

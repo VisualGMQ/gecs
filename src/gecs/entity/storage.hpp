@@ -95,27 +95,21 @@ template <typename EntityT, typename Payload, size_t PageSize, typename Allocato
 class basic_storage: public basic_sparse_set<EntityT, PageSize> {
 public:
     using type = basic_storage<EntityT, Payload, PageSize, Allocator>;
+    using payload_type = Payload;
+    using entity_type = EntityT;
     using allocator_type = Allocator;
     using alloc_traits = std::allocator_traits<allocator_type>;
     using payload_container_type = std::vector<typename alloc_traits::pointer, typename alloc_traits::template rebind_alloc<typename alloc_traits::pointer>>;
     using base_type = basic_sparse_set<EntityT, PageSize>;
     using size_type = typename base_type::size_type;
 
-    Payload& insert(EntityT entity, const Payload& payload) noexcept {
+    template <typename... Args>
+    Payload& insert(EntityT entity, Args&&... args) noexcept {
         ECS_ASSERT(!base_type::contain(entity));
 
         base_type::insert(entity);
         auto idx = base_type::index(entity);
-        return *(new(assure(idx)[idx]) Payload{payload});
-    }
-    
-
-    Payload& insert(EntityT entity, Payload&& payload) noexcept {
-        ECS_ASSERT(!base_type::contain(entity));
-
-        base_type::insert(entity);
-        auto idx = base_type::index(entity);
-        return *(new(assure(idx)[idx]) Payload{payload});
+        return *(new(assure(idx)[idx]) Payload{std::forward<Args>(args)...});
     }
 
     template <typename... Args>
@@ -128,15 +122,27 @@ public:
     }
 
     size_type size() const noexcept {
-        return payloads_.size();
+        return base_type::size();
     }
 
-    void remove(EntityT entity) {
+    void remove(EntityT entity) noexcept override {
         ECS_ASSERT(base_type::contain(entity));
 
         auto idx = index(entity);
         payloads_[idx]->~Payload();
+        std::swap(payloads_[idx], payloads_[base_type::size() - 1]);
         base_type::remove(entity);
+    }
+
+    template <typename... Args>
+    Payload& replace(EntityT entity, Args&&... args) noexcept {
+        ECS_ASSERT(base_type::contain(entity));
+
+        base_type::insert(entity);
+        auto idx = index(entity);
+        auto ptr = assure(idx)[idx];
+        ptr->~Payload();
+        return *(new(ptr) Payload{std::forward<Args>(args)...});
     }
 
     size_type capacity() const noexcept {
@@ -148,11 +154,19 @@ public:
     }
 
     const Payload& operator[](EntityT entity) const noexcept {
-        return payloads_[base_type::index(entity)];
+        return *payloads_[base_type::index(entity)];
     }
 
     Payload& operator[](EntityT entity) noexcept {
         return const_cast<Payload&>(std::as_const(*this).operator[](entity));
+    }
+
+    auto find(EntityT entity) const noexcept {
+        if (base_type::contain(entity)) {
+            return internal::storage_iterator<type>{&payloads_, static_cast<internal::storage_iterator<type>::difference_type>(base_type::index(entity)) + 1};
+        } else {
+            return end();
+        }
     }
 
     auto begin() const noexcept {
@@ -195,6 +209,28 @@ public:
         return const_cast<payload_container_type&>(std::as_const(*this).payloads());
     }
 
+    void release() noexcept {
+        size_t i = 0;
+        allocator_type allocator{get_allocator()};
+        while (i < base_type::size()) {
+            payloads_[i]->~Payload();
+            allocator.deallocate(payloads_[i], 1);
+            payloads_[i] = nullptr;
+            i++;
+        }
+        while (i < payloads_.size()) {
+            allocator.deallocate(payloads_[i], 1);
+            payloads_[i] = nullptr;
+            i++;
+        }
+        payloads_.clear();
+        base_type::clear();
+    }
+
+    ~basic_storage() {
+        release();
+    }
+
 private:
     payload_container_type payloads_;
 
@@ -221,7 +257,7 @@ public:
     using base_type = basic_sparse_set<EntityT, PageSize>;
     using size_type = typename base_type::size_type;
 
-    void remove(EntityT entity) noexcept {
+    void remove(EntityT entity) noexcept override {
         if (!base_type::contain(entity)) {
             return;
         }
@@ -229,6 +265,10 @@ public:
         auto& ref = base_type::pump(entity);
         ref = internal::entity_inc_version(ref);
         length_ --;
+    }
+
+    bool contain(EntityT entity) const noexcept {
+        return base_type::contain(entity);
     }
 
     size_type size() const noexcept {
