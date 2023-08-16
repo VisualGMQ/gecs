@@ -14,4 +14,10 @@ constexpr T QuickMod(T a, T mod) {
     return a & (mod - 1);
 }
 
+
+//! @brief a small help class to show type info when compile
+//! @tparam T 
+template <typename T>
+struct show_tmpl_error;
+
 }

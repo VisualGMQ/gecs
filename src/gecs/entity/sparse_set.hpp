@@ -101,9 +101,9 @@ template <typename EntityT, size_t PageSize>
 class basic_sparse_set {
 public:
     using type = basic_sparse_set;
-    using entity_type = typename internal::entity_traits<EntityT>::entity_type;
-
-    using packed_container_type = std::vector<entity_type>;
+    using entity_numeric_type = typename internal::entity_traits<EntityT>::entity_type;
+    using entity_type = EntityT;
+    using packed_container_type = std::vector<entity_numeric_type>;
     using page_type = std::array<size_t, PageSize>;
     using sparse_container_type = std::vector<page_type>;
     using size_type = typename packed_container_type::size_type;
@@ -146,7 +146,7 @@ public:
     }
 
     //! @brief pump a entity to end and return it
-    entity_type& pump(EntityT entity) noexcept {
+    entity_numeric_type& pump(EntityT entity) noexcept {
         ECS_ASSERT(!empty());
 
         auto id = internal::entity_id(entity);
@@ -271,28 +271,28 @@ private:
     packed_container_type packed_;
     sparse_container_type sparse_;
 
-    size_t page(entity_type id) const noexcept {
+    size_t page(entity_numeric_type id) const noexcept {
         return id / PageSize;
     }
 
-    size_t offset(entity_type id) const noexcept {
+    size_t offset(entity_numeric_type id) const noexcept {
         return id % PageSize;
     }
     
-    const size_t* sparse_ptr(entity_type id) const noexcept {
+    const size_t* sparse_ptr(entity_numeric_type id) const noexcept {
         auto page = this->page(id);
         return page < sparse_.size() ? &sparse_[page][offset(id)] : nullptr;
     }
 
-    const size_t& sparse_ref(entity_type id) const noexcept {
+    const size_t& sparse_ref(entity_numeric_type id) const noexcept {
         return sparse_[page(id)][offset(id)];
     }
 
-    size_t* sparse_ptr(entity_type id) noexcept {
+    size_t* sparse_ptr(entity_numeric_type id) noexcept {
         return const_cast<size_t*>(std::as_const(*this).sparse_ptr(id));
     }
 
-    size_t& sparse_ref(entity_type id) noexcept {
+    size_t& sparse_ref(entity_numeric_type id) noexcept {
         return const_cast<size_t&>(std::as_const(*this).sparse_ref(id));
     }
 

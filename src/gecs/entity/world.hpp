@@ -2,6 +2,7 @@
 
 #include "storage.hpp"
 #include "gecs/core/ident.hpp"
+#include "gecs/entity/querier.hpp"
 
 namespace gecs {
 
@@ -23,8 +24,20 @@ using storage_for_t = typename storage_for<SparseSetT, Type>::type;
 template <typename EntityT, size_t PageSize>
 class basic_world final {
 public:
+    using self_type = basic_world<EntityT, PageSize>;
     using entities_container = basic_storage<EntityT, EntityT, PageSize, void>;
     using pool_base_type = basic_sparse_set<EntityT, PageSize>;
+
+    template <typename Type>
+    using storage_for_t = internal::storage_for_t<pool_base_type, Type>;
+
+    template <typename Type>
+    struct storage_for_by_mutable {
+        using type = std::conditional_t<internal::is_mutable_v<Type>, storage_for_t<internal::remove_mut_t<Type>>, const storage_for_t<internal::remove_mut_t<Type>>>;
+    };
+
+    template <typename Type>
+    using storage_for_by_mutable_t = typename storage_for_by_mutable<Type>::type;
 
     EntityT create() noexcept {
         return entities_.emplace();
@@ -48,20 +61,18 @@ public:
 
     template <typename Type, typename... Args>
     Type& emplace(EntityT entity, Args&&... args) noexcept {
-        auto id = id_generator::gen<Type>();
-        return assure<Type>(id).emplace(entity, std::forward<Args>(args)...);
+        return assure<Type>().emplace(entity, std::forward<Args>(args)...);
     }
 
     template <typename Type, typename... Args>
     Type& replace(EntityT entity, Args&&... args) noexcept {
-        auto id = id_generator::gen<Type>();
-        return assure<Type>(id).replace(entity, std::forward<Args>(args)...);
+        return assure<Type>().replace(entity, std::forward<Args>(args)...);
     }
 
     template <typename Type>
     const Type& get(EntityT entity) const noexcept {
         auto id = id_generator::gen<Type>();
-        return static_cast<internal::storage_for_t<pool_base_type, Type>&>(*pools_[id])[entity];
+        return static_cast<storage_for_t<Type>&>(*pools_[id])[entity];
     }
 
     template <typename Type>
@@ -71,8 +82,7 @@ public:
 
     template <typename Type>
     void remove(EntityT entity) noexcept {
-        auto id = id_generator::gen<Type>();
-        assure<Type>(id).remove(entity);
+        assure<Type>().remove(entity);
     }
 
     template <typename Type>
@@ -86,13 +96,13 @@ public:
     }
 
     template <typename Type>
-    const internal::storage_for_t<pool_base_type, Type>& pool() const noexcept {
-        return assure<Type>(id_generator::gen<Type>());
+    const storage_for_t<Type>& pool() const noexcept {
+        return assure<Type>();
     }
 
     template <typename Type>
-    internal::storage_for_t<pool_base_type, Type>& pool() noexcept {
-        return const_cast<internal::storage_for_t<pool_base_type, Type>>(std::as_const(*this).pool());
+    storage_for_t<Type>& pool() noexcept {
+        return const_cast<storage_for_t<Type>>(std::as_const(*this).pool());
     }
 
     const entities_container& entities() const noexcept {
@@ -109,7 +119,14 @@ public:
 
     template <typename Type>
     auto& pool() const noexcept {
-        return assure<Type>(id_generator::gen<Type>());
+        return assure<Type>();
+    }
+
+    template <typename Type>
+    auto query() noexcept {
+        auto& pool = assure<internal::remove_mut_t<Type>>();
+
+        return basic_querier<EntityT, PageSize, self_type, Type>(std::tuple(&static_cast<storage_for_by_mutable_t<Type>&>(pool)));
     }
 
 private:
@@ -117,14 +134,15 @@ private:
     entities_container entities_;
 
     template <typename Type>
-    internal::storage_for_t<pool_base_type, Type>& assure(size_t idx) noexcept {
+    storage_for_t<Type>& assure() noexcept {
+        size_t idx = id_generator::gen<Type>();
         if (idx >= pools_.size()) {
             pools_.resize(idx + 1);
         }
         if (pools_[idx] == nullptr) {
-            pools_[idx] = std::make_unique<internal::storage_for_t<pool_base_type, Type>>();
+            pools_[idx] = std::make_unique<storage_for_t<Type>>();
         }
-        return static_cast<internal::storage_for_t<pool_base_type, Type>&>(*pools_[idx]);
+        return static_cast<storage_for_t<Type>&>(*pools_[idx]);
     }
 };
 
