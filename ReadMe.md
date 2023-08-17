@@ -141,7 +141,7 @@ for (auto& [entity, comp1, comp2, comp3] : multi_queirer) {
 }
 ```
 
-`resource`则是对资源的获取。资源是一种在ECS中唯一的组件：
+`resource`则是对资源的获取。资源是一种在ECS全局唯一的单例：
 
 ```cpp
 void system(resource<Name> res) {
