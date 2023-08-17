@@ -1,0 +1,1 @@
+AddTest(type_list)

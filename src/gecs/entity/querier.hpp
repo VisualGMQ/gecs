@@ -1,8 +1,10 @@
 #pragma once
 
+#include "gecs/config/config.hpp"
+#include "gecs/core/type_list.hpp"
+
 #include <utility>
 #include <tuple>
-#include "gecs/config/config.hpp"
 
 namespace gecs {
 
@@ -139,7 +141,7 @@ using storage_for_with_constness_t = add_const_conditional<!is_mutable_v<Type>, 
 template <typename EntityT, size_t PageSize, typename WorldT, typename... Types>
 class basic_querier {
 public:
-    using query_types = std::tuple<Types...>;
+    using query_types = type_list<Types...>;
     using pool_container = std::tuple<internal::storage_for_with_constness_t<WorldT, Types>*...>;
     using pool_container_reference = pool_container&;
     using iterator = internal::querier_iterator<EntityT, std::decay_t<decltype(std::declval<WorldT::pool_base_type>().packed())>, internal::storage_for_with_constness_t<WorldT, Types>*...>;
@@ -177,7 +179,7 @@ private:
 template <typename EntityT, size_t PageSize, typename WorldT, typename Type>
 class basic_querier<EntityT, PageSize, WorldT, Type> final {
 public:
-    using query_types = std::tuple<Type>;
+    using query_types = type_list<Type>;
     using pool_type = internal::decay_storage_for_t<WorldT, Type>;
     using pool_type_with_constness = internal::storage_for_with_constness_t<WorldT, Type>;
     using pool_type_pointer_with_constness = pool_type_with_constness *;

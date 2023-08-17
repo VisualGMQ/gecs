@@ -7,4 +7,9 @@ namespace gecs {
 
 using world = basic_world<config::Entity, config::PageSize>;
 
+template <typename... Ts>
+using querier = typename world::querier_type<Ts...>;
+
+using commands = typename world::commands_type;
+
 }

@@ -7,3 +7,6 @@ endmacro(AddTest)
 
 add_subdirectory(entity)
 add_subdirectory(signal)
+add_subdirectory(core)
+
+AddTest(gecs_example)

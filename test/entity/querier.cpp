@@ -28,7 +28,6 @@ TEST_CASE("querier misc") {
         REQUIRE(querier.begin() == querier.end());
         REQUIRE(querier.size() == 0);
     }
-
 }
 
 TEST_CASE("single querier") {
