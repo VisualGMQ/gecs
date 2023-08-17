@@ -80,12 +80,12 @@ public:
         return operator+=(-step);
     }
 
-    querier_iterator& operator+(difference_type step) noexcept {
+    querier_iterator operator+(difference_type step) noexcept {
         querier_iterator iter = *this;
         return iter += step;
     }
 
-    querier_iterator& operator-(difference_type step) noexcept {
+    querier_iterator operator-(difference_type step) noexcept {
         return operator+(-step);
     }
 
@@ -125,18 +125,61 @@ private:
     }
 };
 
+template <typename bool B, typename T>
+using add_const_conditional = std::conditional_t<B, const T, T>;
+
+template <typename WorldT, typename Type>
+using decay_storage_for_t = std::decay_t<typename WorldT::template storage_for_by_mutable_t<remove_mut_t<Type>>>; 
+
+template <typename WorldT, typename Type>
+using storage_for_with_constness_t = add_const_conditional<!is_mutable_v<Type>, decay_storage_for_t<WorldT, Type>>;
+
 }
 
+template <typename EntityT, size_t PageSize, typename WorldT, typename... Types>
+class basic_querier {
+public:
+    using query_types = std::tuple<Types...>;
+    using pool_container = std::tuple<internal::storage_for_with_constness_t<WorldT, Types>*...>;
+    using pool_container_reference = pool_container&;
+    using iterator = internal::querier_iterator<EntityT, std::decay_t<decltype(std::declval<WorldT::pool_base_type>().packed())>, internal::storage_for_with_constness_t<WorldT, Types>*...>;
+    using const_iterator = const iterator;
+    using entity_container = typename WorldT::pool_base_type::packed_container_type;
 
-template <typename EntityT, size_t PageSize, typename WorldT, typename... PoolTypes>
-class basic_querier;
+    basic_querier(pool_container pools, const entity_container& entities) noexcept: pools_(pools), entities_(entities) { }
+    basic_querier(pool_container pools, entity_container&& entities) noexcept: pools_(pools), entities_(std::move(entities)) { }
+
+    auto& entities() const noexcept {
+        return entities_;
+    }
+
+    iterator begin() noexcept {
+        return iterator(pools_, entities_, entities_.size());
+    }
+
+    iterator end() noexcept {
+        return iterator(pools_, entities_, 0);
+    }
+
+    auto size() const noexcept {
+        return entities_.size();
+    }
+
+    bool empty() const noexcept {
+        return size() == 0;
+    }
+
+private:
+    pool_container pools_;
+    entity_container entities_;
+};
 
 template <typename EntityT, size_t PageSize, typename WorldT, typename Type>
 class basic_querier<EntityT, PageSize, WorldT, Type> final {
 public:
     using query_types = std::tuple<Type>;
-    using pool_type = std::decay_t<typename WorldT::template storage_for_by_mutable_t<internal::remove_mut_t<Type>>>;
-    using pool_type_with_constness = std::conditional_t<internal::is_mutable_v<Type>, pool_type, const pool_type>;
+    using pool_type = internal::decay_storage_for_t<WorldT, Type>;
+    using pool_type_with_constness = internal::storage_for_with_constness_t<WorldT, Type>;
     using pool_type_pointer_with_constness = pool_type_with_constness *;
     using pool_container = std::tuple<pool_type_pointer_with_constness>;
     using pool_container_reference = pool_container&;
@@ -163,13 +206,12 @@ public:
         return std::get<0>(pool_)->packed().size();
     }
 
+    bool empty() const noexcept {
+        return size() == 0;
+    }
+
 private:
     pool_container pool_;
-
-    template <size_t... Indices>
-    size_t minimal_list_idx(pool_container_reference& pools, std::index_sequence<Indices...>) {
-        return internal::min<size_t>(std::get<Indices>(pools).size(), ...);
-    }
 };
 
 }

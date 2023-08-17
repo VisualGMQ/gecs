@@ -5,7 +5,7 @@
 namespace gecs {
 
 inline constexpr size_t IsPowerOf2(size_t number) {
-    return number && ((number - 1) & number == 0);
+    return number && ((number - 1) & (number == 0));
 }
 
 template <typename T>
