@@ -11,7 +11,8 @@ class delegate;
 template <typename Ret, typename... Args>
 class delegate<Ret(Args...)> final {
 public:
-    using delegate_type = Ret(*)(const void*, Args...);
+    using delegate_fn_type = Ret(const void*, Args...);
+    using delegate_pointer_type = Ret(*)(const void*, Args...);
 
     delegate() = default;
 
@@ -20,19 +21,19 @@ public:
         fn_ = wrap<Func>(std::make_index_sequence<sizeof...(Args)>{});
     }
 
-    void connect(delegate_type d) {
+    void connect(delegate_pointer_type d) {
         payload_ = nullptr;
         fn_ = d;
     }
 
     template <typename Payload>
-    void connect(delegate_type d, Payload& payload) {
+    void connect(delegate_pointer_type d, Payload& payload) {
         payload_ = &payload;
         fn_ = d;
     }
 
     template <typename Payload>
-    void connect(delegate_type d, Payload* payload) {
+    void connect(delegate_pointer_type d, Payload* payload) {
         payload_ = payload;
         fn_ = d;
     }
@@ -94,10 +95,10 @@ public:
 
 private:
     const void* payload_ = nullptr;
-    delegate_type fn_ = nullptr; 
+    delegate_pointer_type fn_ = nullptr; 
 
     template <auto Func, size_t... Index>
-    delegate_type wrap(std::index_sequence<Index...>) {
+    delegate_pointer_type wrap(std::index_sequence<Index...>) {
         payload_ = nullptr;
         using args_list = type_list<Args...>;
         if constexpr (std::is_invocable_r_v<Ret, decltype(Func), type_list_element_t<Index, args_list>...>) {
@@ -113,7 +114,7 @@ private:
     }
 
     template <auto Func, typename Payload, size_t... Index>
-    delegate_type wrap(Payload& payload, std::index_sequence<Index...>) {
+    delegate_pointer_type wrap(Payload& payload, std::index_sequence<Index...>) {
         payload_ = &payload;
         using args_list = type_list<Args...>;
         if constexpr (std::is_invocable_r_v<Ret, decltype(Func), Payload&, type_list_element_t<Index, args_list>...>) {
@@ -129,7 +130,7 @@ private:
     }
 
     template <auto Func, typename Payload, size_t... Index>
-    delegate_type wrap(Payload* payload, std::index_sequence<Index...>) {
+    delegate_pointer_type wrap(Payload* payload, std::index_sequence<Index...>) {
         payload_ = payload;
         using args_list = type_list<Args...>;
         if constexpr (std::is_invocable_r_v<Ret, decltype(Func), Payload*, type_list_element_t<Index, args_list>...>) {

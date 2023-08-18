@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gecs/signal/sigh.hpp"
+#include "storage.hpp"
 
 namespace gecs {
 
@@ -46,6 +47,37 @@ public:
 private:
     sigh_type construction_;
     sigh_type update_;
+    sigh_type destruction_;
+};
+
+template <typename EntityT, size_t PageSize>
+class sigh_mixin<basic_storage<EntityT, EntityT, PageSize, void>> final : public basic_storage<EntityT, EntityT, PageSize, void> {
+public:
+    using underlying_type = basic_storage<EntityT, EntityT, PageSize, void>;
+    using entity_type = typename underlying_type::entity_type;
+    using sigh_type = sigh<void(entity_type)>;
+
+    auto& on_construct() noexcept {
+        return this->construction_;
+    }
+
+    auto& on_destruction() noexcept {
+        return this->destruction_;
+    }
+
+    entity_type emplace() noexcept {
+        entity_type entity = underlying_type::emplace();
+        construction_.trigger(entity);
+        return entity;
+    }
+
+    void remove(entity_type entity) noexcept {
+        destruction_.trigger(entity);
+        underlying_type::remove(entity);
+    }
+
+private:
+    sigh_type construction_;
     sigh_type destruction_;
 };
 

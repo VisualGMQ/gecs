@@ -254,8 +254,8 @@ public:
         return std::as_const(*this).data();
     }
 
-    EntityT& back() noexcept {
-        return const_cast<Entity&>(std::as_const(*this).back());
+    entity_type& back() noexcept {
+        return const_cast<entity_type&>(std::as_const(*this).back());
     }
 
     internal::sparse_set_iterator<basic_sparse_set> find(EntityT entity) noexcept {

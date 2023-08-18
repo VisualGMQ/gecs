@@ -23,7 +23,7 @@ public:
 
     template <typename Type, typename... Args>
     Type& replace(entity_type entity, Args&&... args) noexcept {
-        return world_->replace<Type>(entity, std::forward<Args>(args)...);
+        return world_->template replace<Type>(entity, std::forward<Args>(args)...);
     }
 
     void destroy(entity_type entity) noexcept {
@@ -32,7 +32,7 @@ public:
 
     template <typename Type>
     void remove(entity_type entity) noexcept {
-        world_->remove<Type>(entity);
+        world_->template remove<Type>(entity);
     }
 
     bool alive(entity_type entity) const noexcept {
@@ -47,6 +47,21 @@ public:
     template <typename T>
     void remove_resource() noexcept {
         internal::resource_cache<T>::instance().remove();
+    }
+
+    template <typename T>
+    auto& on_construct() noexcept {
+        return world_->template on_construct<T>();
+    }
+
+    template <typename T>
+    auto& on_update() noexcept {
+        return world_->template on_update<T>();
+    }
+
+    template <typename T>
+    auto& on_destruct() noexcept {
+        return world_->template on_destruct<T>();
     }
 
 private:

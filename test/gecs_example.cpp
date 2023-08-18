@@ -33,7 +33,7 @@ TEST_CASE("gecs") {
     delegate<void(entity, Name&)> d;
     d.connect<trigger>();
 
-    world.on_construct<Name>() += d;
+    world.on_construct<Name>().add(d);
 
     // use non-capture lambda
     constexpr auto f = +[](commands cmds) {

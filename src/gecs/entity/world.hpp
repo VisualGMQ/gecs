@@ -9,6 +9,7 @@
 #include "gecs/core/ident.hpp"
 #include "gecs/core/utility.hpp"
 #include "gecs/core/type_list.hpp"
+#include "gecs/signal/sink.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -113,9 +114,13 @@ auto construct(WorldT& world) {
 template <typename EntityT, size_t PageSize>
 class basic_world final {
 public:
-    using self_type = basic_world<EntityT, PageSize>;
-    using entities_container_type = basic_storage<EntityT, EntityT, PageSize, void>;
     using pool_base_type = basic_sparse_set<EntityT, PageSize>;
+
+    template <typename Type>
+    using storage_for_t = internal::storage_for_t<pool_base_type, Type>;
+
+    using self_type = basic_world<EntityT, PageSize>;
+    using entities_container_type = sigh_mixin<basic_storage<EntityT, EntityT, PageSize, void>>;
     using pool_container_type = std::vector<std::unique_ptr<pool_base_type>>;
     using pool_container_reference = pool_container_type&;
     using entity_type = EntityT;
@@ -134,9 +139,6 @@ public:
     using custom_update_system_t = void(Ts...);
 
     template <typename Type>
-    using storage_for_t = internal::storage_for_t<pool_base_type, Type>;
-
-    template <typename Type>
     struct storage_for_by_mutable {
         using type = std::conditional_t<internal::is_mutable_v<Type>, storage_for_t<internal::remove_mut_t<Type>>, const storage_for_t<internal::remove_mut_t<Type>>>;
     };
@@ -144,7 +146,7 @@ public:
     template <typename Type>
     using storage_for_by_mutable_t = typename storage_for_by_mutable<Type>::type;
 
-    EntityT create() noexcept {
+    entity_type create() noexcept {
         return entities_.emplace();
     }
 
@@ -299,18 +301,34 @@ public:
     }
 
     template <typename T>
-    auto& on_construct() noexcept {
-        return assure<T>().on_construct();
+    auto on_construct() noexcept {
+        return sink(assure<T>().on_construct());
     }
 
     template <typename T>
-    auto& on_destruction() noexcept {
-        return assure<T>().on_destruct();
+    auto on_destruction() noexcept {
+        return sink(assure<T>().on_destruct());
     }
 
     template <typename T>
-    auto& on_update() noexcept {
-        return assure<T>().on_update();
+    auto on_update() noexcept {
+        return sink(assure<T>().on_update());
+    }
+
+    template <>
+    auto on_construct<entity_type>() noexcept {
+        return sink(entities_.on_construct());
+    }
+
+    template <>
+    auto on_destruction<entity_type>() noexcept {
+        return sink(entities_.on_destruct());
+    }
+
+    template <>
+    auto on_update<entity_type>() noexcept {
+        ECS_ASSERT("entity don't has update listener", false);
+        return internal::null_entity_t{};
     }
 
 private:

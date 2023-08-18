@@ -4,15 +4,21 @@
 
 namespace gecs {
 
+template <typename SighT>
+class sink;
+
 template <typename T>
 class sigh;
 
 template <typename Ret, typename... Args>
-class sigh<Ret(Args...)> {
+class sigh<Ret(Args...)> final {
 public:
     using delegate_type = delegate<Ret(Args...)>;
     using container_type = std::vector<delegate_type>;
     using size_type = typename container_type::size_type;
+    using self_type = sigh<Ret(Args...)>;
+
+    friend class sink<self_type>;
 
     size_type size() const noexcept {
         return delegates_.size();
@@ -20,14 +26,6 @@ public:
 
     bool empty() const noexcept {
         return delegates_.empty();
-    }
-
-    void add(const delegate_type& d) noexcept {
-        delegates_.push_back(d);
-    }
-
-    void add(delegate_type&& d) noexcept {
-        delegates_.push_back(std::move(d));
     }
 
     void trigger(Args... args) noexcept {
@@ -47,7 +45,7 @@ public:
     }
 
     void clear() noexcept {
-        delegats_.clear();
+        delegates_.clear();
     }
 
 private:
