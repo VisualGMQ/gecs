@@ -146,9 +146,6 @@ for (auto& [entity, comp1, comp2, comp3] : multi_queirer) {
 }
 ```
 
-**不建议在遍历querier内容时对实体/组件进行增加/删除操作**，这可能导致querier内部的信息失效，从而导致程序崩溃。
-
-
 `resource`则是对资源的获取。资源是一种在ECS中唯一的组件：
 
 ```cpp
