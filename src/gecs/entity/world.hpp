@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sigh_mixin.hpp"
 #include "storage.hpp"
 #include "querier.hpp"
 #include "commands.hpp"
@@ -21,7 +22,7 @@ struct storage_for;
 
 template <typename EntityT, size_t PageSize, typename Type>
 struct storage_for<basic_sparse_set<EntityT, PageSize>, Type> {
-    using type = basic_storage<EntityT, Type, PageSize, std::allocator<Type>>;
+    using type = sigh_mixin<basic_storage<EntityT, Type, PageSize, std::allocator<Type>>>;
 };
 
 template <typename SparseSetT, typename Type>
@@ -295,6 +296,21 @@ public:
         for (auto sys : update_systems_) {
             sys(*this);
         }
+    }
+
+    template <typename T>
+    auto& on_construct() noexcept {
+        return assure<T>().on_construct();
+    }
+
+    template <typename T>
+    auto& on_destruction() noexcept {
+        return assure<T>().on_destruct();
+    }
+
+    template <typename T>
+    auto& on_update() noexcept {
+        return assure<T>().on_update();
     }
 
 private:

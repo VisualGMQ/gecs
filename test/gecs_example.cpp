@@ -15,9 +15,9 @@ struct Res {
 
 void update_system(commands cmds, querier<Name> querier, resource<Res> res) {
     auto it = querier.begin();
-    REQUIRE(std::get<1>(*it).name == "ent2");
+    REQUIRE(std::get<1>(*it).name == "ent2-trigged");
     it ++;
-    REQUIRE(std::get<1>(*it).name == "ent1");
+    REQUIRE(std::get<1>(*it).name == "ent1-trigged");
     REQUIRE(it + 1 == querier.end());
 
     REQUIRE(res->value == 123);
@@ -25,6 +25,15 @@ void update_system(commands cmds, querier<Name> querier, resource<Res> res) {
 
 TEST_CASE("gecs") {
     world world;
+
+    constexpr auto trigger = +[](entity entity, Name& name) {
+        name.name += "-trigged";
+    };
+
+    delegate<void(entity, Name&)> d;
+    d.connect<trigger>();
+
+    world.on_construct<Name>() += d;
 
     // use non-capture lambda
     constexpr auto f = +[](commands cmds) {

@@ -13,6 +13,8 @@ class delegate<Ret(Args...)> final {
 public:
     using delegate_type = Ret(*)(const void*, Args...);
 
+    delegate() = default;
+
     template <auto Func>
     void connect() noexcept {
         fn_ = wrap<Func>(std::make_index_sequence<sizeof...(Args)>{});
