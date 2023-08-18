@@ -105,7 +105,7 @@ public:
 
     template <typename... Args>
     Payload& insert(EntityT entity, Args&&... args) noexcept {
-        ECS_ASSERT(!base_type::contain(entity));
+        ECS_ASSERT("storage already has entity", !base_type::contain(entity));
 
         base_type::insert(entity);
         auto idx = base_type::index(entity);
@@ -114,10 +114,10 @@ public:
 
     template <typename... Args>
     Payload& emplace(EntityT entity, Args&&... args) noexcept {
-        ECS_ASSERT(!base_type::contain(entity));
+        ECS_ASSERT("storage already has entity", !base_type::contain(entity));
 
         base_type::insert(entity);
-        auto idx = index(entity);
+        auto idx = this->index(entity);
         return *(new(assure(idx)[idx]) Payload{std::forward<Args>(args)...});
     }
 
@@ -126,9 +126,9 @@ public:
     }
 
     void remove(EntityT entity) noexcept override {
-        ECS_ASSERT(base_type::contain(entity));
+        ECS_ASSERT("entity not exists", base_type::contain(entity));
 
-        auto idx = index(entity);
+        auto idx = this->index(entity);
         payloads_[idx]->~Payload();
         std::swap(payloads_[idx], payloads_[base_type::size() - 1]);
         base_type::remove(entity);
@@ -136,10 +136,10 @@ public:
 
     template <typename... Args>
     Payload& replace(EntityT entity, Args&&... args) noexcept {
-        ECS_ASSERT(base_type::contain(entity));
+        ECS_ASSERT("entity not exists", base_type::contain(entity));
 
         base_type::insert(entity);
-        auto idx = index(entity);
+        auto idx = this->index(entity);
         auto ptr = assure(idx)[idx];
         ptr->~Payload();
         return *(new(ptr) Payload{std::forward<Args>(args)...});
@@ -163,14 +163,14 @@ public:
 
     auto find(EntityT entity) const noexcept {
         if (base_type::contain(entity)) {
-            return internal::storage_iterator<type>{&payloads_, static_cast<internal::storage_iterator<type>::difference_type>(base_type::index(entity)) + 1};
+            return internal::storage_iterator<type>{&payloads_, static_cast<typename internal::storage_iterator<type>::difference_type>(base_type::index(entity)) + 1};
         } else {
             return end();
         }
     }
 
     auto begin() const noexcept {
-        return internal::storage_iterator<type>{&payloads_, static_cast<internal::storage_iterator<type>::difference_type>(payloads_.size())};
+        return internal::storage_iterator<type>{&payloads_, static_cast<typename internal::storage_iterator<type>::difference_type>(payloads_.size())};
     }
 
     auto end() const noexcept {

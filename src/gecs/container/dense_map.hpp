@@ -231,7 +231,7 @@ private:
     }
 
     inline size_t index(const Key& key) {
-        return QuickMod<size_t>(Hasher{}(key), sparse_.size());
+        return quick_mod<size_t>(Hasher{}(key), sparse_.size());
     }
 };
 

@@ -18,7 +18,7 @@ public:
 
     template <typename Type, typename... Args>
     Type& emplace(entity_type entity, Args&&... args) noexcept {
-        return world_->emplace<Type>(entity, std::forward<Args>(args)...);
+        return world_->template emplace<Type>(entity, std::forward<Args>(args)...);
     }
 
     template <typename Type, typename... Args>

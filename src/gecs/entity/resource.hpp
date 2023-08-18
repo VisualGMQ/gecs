@@ -1,8 +1,9 @@
 #pragma once
 
-#include "gecs/core/singlton.hpp"
 #include "entity.hpp"
 #include "querier.hpp"
+#include "gecs/core/singlton.hpp"
+#include "gecs/core/utility.hpp"
 
 #include <type_traits>
 #include <memory>
@@ -23,7 +24,7 @@ class resource_cache final : public singlton<resource_cache<T>, false, internal:
 public:
     using type = std::decay_t<T>;
     using type_reference = type&;
-    using type_const_reference = const type_reference;
+    using type_const_reference = const type&;
 
     bool has() const noexcept {
         return data_;
@@ -40,12 +41,12 @@ public:
     }
 
     type_const_reference get() const noexcept {
-        ECS_ASSERT(data_);
+        ECS_ASSERT("resource not exists", data_);
         return *data_;
     }
 
     type_reference get() noexcept {
-        ECS_ASSERT(data_);
+        ECS_ASSERT("resource not exists", data_);
         return const_cast<type_reference>(std::as_const(*this).get());
     }
 

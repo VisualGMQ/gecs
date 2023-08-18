@@ -38,18 +38,23 @@ void update_system(commands cmds, querier<Name> querier, resource<Res> res) {
 int main() {
     world world;
 
-    // use non-capture lambda
-    world.regist_startup_system<+[](commands cmds) {
+    // 得到Lambda对应的函数指针
+    constexpr auto startup = +[](commands cmds) {
         auto entity1 = cmds.create();
         cmds.emplace<Name>(entity1, Name{"ent1"});
         auto entity2 = cmds.create();
         cmds.emplace<Name>(entity2, Name{"ent2"});
 
         cmds.emplace_resource<Res>(Res{123});
-    }>();
+    };
 
-    // use normal function
+    // 注册这个函数指针
+    world.regist_startup_system<startup>();
+
+    // 使用普通函数
     world.regist_update_system<update_system>();
+    // 使用函数指针也可
+    // world.regist_update_system<&update_system>();
 
     world.startup();
     world.update();
@@ -140,6 +145,9 @@ for (auto& [entity, comp1, comp2, comp3] : multi_queirer) {
     ...
 }
 ```
+
+**不建议在遍历querier内容时对实体/组件进行增加/删除操作**，这可能导致querier内部的信息失效，从而导致程序崩溃。
+
 
 `resource`则是对资源的获取。资源是一种在ECS中唯一的组件：
 

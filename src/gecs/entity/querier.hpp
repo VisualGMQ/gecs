@@ -127,7 +127,7 @@ private:
     }
 };
 
-template <typename bool B, typename T>
+template <bool B, typename T>
 using add_const_conditional = std::conditional_t<B, const T, T>;
 
 template <typename WorldT, typename Type>
@@ -144,7 +144,7 @@ public:
     using query_types = type_list<Types...>;
     using pool_container = std::tuple<internal::storage_for_with_constness_t<WorldT, Types>*...>;
     using pool_container_reference = pool_container&;
-    using iterator = internal::querier_iterator<EntityT, std::decay_t<decltype(std::declval<WorldT::pool_base_type>().packed())>, internal::storage_for_with_constness_t<WorldT, Types>*...>;
+    using iterator = internal::querier_iterator<EntityT, std::decay_t<decltype(std::declval<typename WorldT::pool_base_type>().packed())>, internal::storage_for_with_constness_t<WorldT, Types>*...>;
     using const_iterator = const iterator;
     using entity_container = typename WorldT::pool_base_type::packed_container_type;
 
@@ -174,46 +174,6 @@ public:
 private:
     pool_container pools_;
     entity_container entities_;
-};
-
-template <typename EntityT, size_t PageSize, typename WorldT, typename Type>
-class basic_querier<EntityT, PageSize, WorldT, Type> final {
-public:
-    using query_types = type_list<Type>;
-    using pool_type = internal::decay_storage_for_t<WorldT, Type>;
-    using pool_type_with_constness = internal::storage_for_with_constness_t<WorldT, Type>;
-    using pool_type_pointer_with_constness = pool_type_with_constness *;
-    using pool_container = std::tuple<pool_type_pointer_with_constness>;
-    using pool_container_reference = pool_container&;
-    using iterator = internal::querier_iterator<EntityT, std::decay_t<decltype(std::declval<WorldT::pool_base_type>().packed())>, pool_type_pointer_with_constness>;
-    using const_iterator = const iterator;
-
-    basic_querier(pool_container pool) noexcept: pool_(pool) { }
-
-    auto& entities() const noexcept {
-        return pool_.packed();
-    }
-
-    iterator begin() noexcept {
-        auto& packed = std::get<0>(pool_)->packed();
-        return iterator(pool_, packed, std::get<0>(pool_)->size());
-    }
-
-    iterator end() noexcept {
-        auto& packed = std::get<0>(pool_)->packed();
-        return iterator(pool_, packed, 0);
-    }
-
-    auto size() const {
-        return std::get<0>(pool_)->packed().size();
-    }
-
-    bool empty() const noexcept {
-        return size() == 0;
-    }
-
-private:
-    pool_container pool_;
 };
 
 }

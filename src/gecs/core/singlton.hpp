@@ -22,7 +22,7 @@ public:
     virtual ~singlton() = default;
 
     static T& instance() {
-        ECS_ASSERT(instance_);
+        ECS_ASSERT("instance not init, you must call T::init() before get this singlton", instance_);
         return *instance;
     }
 

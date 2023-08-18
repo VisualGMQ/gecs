@@ -27,14 +27,16 @@ TEST_CASE("gecs") {
     world world;
 
     // use non-capture lambda
-    world.regist_startup_system<+[](commands cmds) {
+    constexpr auto f = +[](commands cmds) {
         auto entity1 = cmds.create();
         cmds.emplace<Name>(entity1, Name{"ent1"});
         auto entity2 = cmds.create();
         cmds.emplace<Name>(entity2, Name{"ent2"});
 
         cmds.emplace_resource<Res>(Res{123});
-    }>();
+    };
+
+    world.regist_startup_system<f>();
 
     // use normal function
     world.regist_update_system<update_system>();

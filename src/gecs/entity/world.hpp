@@ -74,7 +74,7 @@ struct querier_construct_helper<WorldT, basic_querier<EntityT, PageSize, WorldT,
     using querier_type = basic_querier<EntityT, PageSize, WorldT, Ts...>;
 
     querier_type operator()(WorldT& world) const {
-        return world.query<Ts...>();
+        return world.template query<Ts...>();
     }
 };
 
@@ -90,7 +90,7 @@ auto construct_querier(WorldT& world) {
 
 template <typename WorldT>
 typename WorldT::commands_type construct_commands(WorldT& world) {
-    return WorldT::commands_type{&world};
+    return typename WorldT::commands_type{&world};
 }
 
 
@@ -103,7 +103,7 @@ auto construct(WorldT& world) {
     } else if constexpr (is_resource_v<T>) {
         return construct_resource<T>();
     } else {
-        static_assert(false, "can't construct a unsupport type");
+        ECS_ASSERT("can't construct a unsupport type", false);
     }
 }
 
@@ -230,14 +230,15 @@ public:
     querier_type<Types...> query() noexcept {
         static_assert(sizeof...(Types) > 0, "must provide query component");
         if constexpr (sizeof...(Types) == 1) {
-            return querier_type<Types...>(std::tuple(&static_cast<storage_for_by_mutable_t<Types>&>(assure<internal::remove_mut_t<Types>>())...));
+            auto pool_tuple = std::tuple(&static_cast<storage_for_by_mutable_t<Types>&>(assure<internal::remove_mut_t<Types>>())...);
+            return querier_type<Types...>(pool_tuple, std::get<0>(pool_tuple)->packed());
         } else {
-            pool_base_type::packed_container_type entities;
+            typename pool_base_type::packed_container_type entities;
             std::array indices = { id_generator::gen<Types>()... };
             size_t idx = minimal_idx<Types...>(pools_, indices);
             for (int i = 0; i < pools_[idx]->size(); i++) {
                 auto entity = pools_[idx]->packed()[i];
-                if (std::all_of(pools_.begin(), pools_.end(), [&entity](const pool_container_type::value_type& pool){
+                if (std::all_of(pools_.begin(), pools_.end(), [&entity](const typename pool_container_type::value_type& pool){
                     return pool->contain(static_cast<entity_type>(entity));
                 })) {
                     entities.push_back(entity);
@@ -247,20 +248,17 @@ public:
         }
     }
 
-    template <custom_startup_system_t System>
+    template <auto System>
     void regist_startup_system() noexcept {
         startup_systems_.emplace_back([](self_type& world) {
-            std::invoke(System, commands_type(&world));
+            using type = strip_function_pointer_to_type_t<decltype(System)>;
+            if constexpr (std::is_invocable_v<type, commands_type>) {
+                std::invoke(System, commands_type(&world));
+            } else {
+                ECS_ASSERT("your startup system's type must be void(commands)", false);
+            }
         });
     }
-
-    template <typename T>
-    struct update_system_traits;
-    
-    template <typename... Ts>
-    struct update_system_traits<custom_update_system_t<Ts...>> {
-        using types = type_list<Ts...>;
-    };
 
     template <typename Type>
     storage_for_t<Type>& assure() noexcept {
@@ -277,7 +275,7 @@ public:
     template <auto System>
     void regist_update_system() noexcept {
         update_systems_.emplace_back([](self_type& world) {
-            using type_list = typename update_system_traits<std::remove_reference_t<decltype(System)>>::types;
+            using type_list = typename update_system_traits<std::remove_reference_t<strip_function_pointer_to_type_t<decltype(System)>>>::types;
             invoke_update_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
         });
     }
@@ -304,6 +302,14 @@ private:
     entities_container_type entities_;
     system_container_type startup_systems_;
     system_container_type update_systems_;
+
+    template <typename T>
+    struct update_system_traits;
+    
+    template <typename... Ts>
+    struct update_system_traits<custom_update_system_t<Ts...>> {
+        using types = type_list<Ts...>;
+    };
 
     template <typename... Types>
     size_t minimal_idx(pool_container_reference& pools, const std::array<size_t, sizeof...(Types)>& indices) {

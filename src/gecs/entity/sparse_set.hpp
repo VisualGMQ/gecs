@@ -1,6 +1,7 @@
 #pragma once
 
 #include "entity.hpp"
+#include "gecs/core/utility.hpp"
 
 #include <tuple>
 #include <array>
@@ -113,12 +114,12 @@ public:
 
     EntityT insert(EntityT entity) noexcept {
         using traits = internal::entity_traits<EntityT>;
-        ECS_ASSERT(traits::entity_mask != internal::entity_id(entity));
+        ECS_ASSERT("invalid entity id", traits::entity_mask != internal::entity_id(entity));
 
         auto id = internal::entity_id(entity);
         packed_.push_back(internal::entity_to_integral(entity));
         assure(page(id))[offset(id)] = packed_.size() - 1u;
-        return internal::construct_entity<EntityT>(0, static_cast<traits::entity_mask_type>(packed_.size() - 1u));
+        return internal::construct_entity<EntityT>(0, static_cast<typename traits::entity_mask_type>(packed_.size() - 1u));
     }
 
     virtual void remove(EntityT entity) noexcept {
@@ -147,7 +148,7 @@ public:
 
     //! @brief pump a entity to end and return it
     entity_numeric_type& pump(EntityT entity) noexcept {
-        ECS_ASSERT(!empty());
+        ECS_ASSERT("sparse set must not empty when pump element", !empty());
 
         auto id = internal::entity_id(entity);
         auto& ref1 = sparse_ref(id);
@@ -160,7 +161,7 @@ public:
     size_t index(EntityT entity) const noexcept {
         auto id = internal::entity_id(entity);
         auto page = this->page(id);
-        ECS_ASSERT(page < sparse_.size());
+        ECS_ASSERT("entity must exists in sparse set when call index", page < sparse_.size());
         return sparse_[page][offset(id)];
     }
 
@@ -176,7 +177,7 @@ public:
     }
 
     const_iterator begin() const noexcept {
-        return internal::sparse_set_iterator<type>{&packed_, static_cast<internal::sparse_set_iterator<type>::difference_type>(packed_.size())};
+        return internal::sparse_set_iterator<type>{&packed_, static_cast<typename internal::sparse_set_iterator<type>::difference_type>(packed_.size())};
     }
 
     const_iterator end() const noexcept {

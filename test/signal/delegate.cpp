@@ -22,21 +22,21 @@ struct Person final {
 
 TEST_CASE("delegate") {
     SECTION("simple global function delegate") {
-        Delegate<double(float)> d;
-        d.Connect<&Multiply2>();
+        delegate<double(float)> d;
+        d.connect<&Multiply2>();
         REQUIRE(d(2.0) == 4.0);
     }
 
     SECTION("delegate with payload(corialization)") {
-        Delegate<double()> d;
+        delegate<double()> d;
         float pre_value = 123.0;
-        d.Connect<&Multiply2>(pre_value);
+        d.connect<&Multiply2>(pre_value);
         REQUIRE(d() == 246.0);
     }
 
     SECTION("delegate with ordered arguments") {
-        Delegate<bool(float, std::string, double)> d;
-        d.Connect<&OrderedParams>(std::index_sequence<1, 0, 2>{});
+        delegate<bool(float, std::string, double)> d;
+        d.connect<&OrderedParams>(std::index_sequence<1, 0, 2>{});
         REQUIRE(d(1, "", 3.0));
     }
 
@@ -45,16 +45,16 @@ TEST_CASE("delegate") {
         person.name = "foo";
         person.height = 122;
 
-        Delegate<std::string(void)> d1;
-        d1.Connect<&Person::name>(person);
+        delegate<std::string(void)> d1;
+        d1.connect<&Person::name>(person);
         REQUIRE(d1() == "foo");
 
-        Delegate<std::string(Person&)> d2;
-        d2.Connect<&Person::name>();
+        delegate<std::string(Person&)> d2;
+        d2.connect<&Person::name>();
         REQUIRE(d2(person) == "foo");
 
-        Delegate<const std::string&(Person&)> d3;
-        d3.Connect<&Person::GetName>();
+        delegate<const std::string&(Person&)> d3;
+        d3.connect<&Person::GetName>();
         REQUIRE(d3(person) == "foo");
     }
 }

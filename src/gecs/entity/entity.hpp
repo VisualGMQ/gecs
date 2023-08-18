@@ -6,8 +6,6 @@ namespace gecs {
 
 namespace internal {
 
-#define ECS_ASSERT(x) assert(x)
-
 template<typename Type>
 static constexpr int popcount(Type value) noexcept {
     return value ? (int(value & 1) + popcount(value >> 1)) : 0;
@@ -39,7 +37,7 @@ struct entity_traits<uint32_t> {
 template <typename EntityT>
 constexpr auto entity_to_integral(EntityT entity) {
     using traits = entity_traits<EntityT>;
-    return static_cast<traits::entity_type>(entity);
+    return static_cast<typename traits::entity_type>(entity);
 }
 
 //! @brief get entity id number
