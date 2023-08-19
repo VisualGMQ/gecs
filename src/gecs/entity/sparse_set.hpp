@@ -98,6 +98,11 @@ private:
 
 }
 
+/**
+ * @brief sparse set for storing entity
+ * @tparam EntityT  the entity type
+ * @tparam PageSize  the page size
+ **/
 template <typename EntityT, size_t PageSize>
 class basic_sparse_set {
 public:
@@ -112,17 +117,19 @@ public:
     using iterator = internal::sparse_set_iterator<basic_sparse_set<EntityT, PageSize>>;
     using const_iterator = iterator;
 
-    EntityT insert(EntityT entity) noexcept {
-        using traits = internal::entity_traits<EntityT>;
+    //! @brief insert an entity
+    entity_type insert(entity_type entity) noexcept {
+        using traits = internal::entity_traits<entity_type>;
         ECS_ASSERT("invalid entity id", traits::entity_mask != internal::entity_id(entity));
 
         auto id = internal::entity_id(entity);
         packed_.push_back(internal::entity_to_integral(entity));
         assure(page(id))[offset(id)] = packed_.size() - 1u;
-        return internal::construct_entity<EntityT>(0, static_cast<typename traits::entity_mask_type>(packed_.size() - 1u));
+        return internal::construct_entity<entity_type>(0, static_cast<typename traits::entity_mask_type>(packed_.size() - 1u));
     }
 
-    virtual void remove(EntityT entity) noexcept {
+    //! @brief remove an entity
+    virtual void remove(entity_type entity) noexcept {
         if (!contain(entity)) {
             return;
         }
@@ -136,18 +143,8 @@ public:
         packed_.pop_back();
     }
 
-    void remove_back() noexcept {
-        if (empty()) {
-            return;
-        }
-
-        auto id = internal::entitiy_id(packed_.back());
-        sparse_ref(id) = null_sparse_data;
-        packed_.pop_back();
-    }
-
     //! @brief pump a entity to end and return it
-    entity_numeric_type& pump(EntityT entity) noexcept {
+    entity_numeric_type& pump(entity_type entity) noexcept {
         ECS_ASSERT("sparse set must not empty when pump element", !empty());
 
         auto id = internal::entity_id(entity);
@@ -158,14 +155,16 @@ public:
         return packed_.back();
     }
 
-    size_t index(EntityT entity) const noexcept {
+    //! @brief get the entity index in packed
+    size_t index(entity_type entity) const noexcept {
         auto id = internal::entity_id(entity);
         auto page = this->page(id);
         ECS_ASSERT("entity must exists in sparse set when call index", page < sparse_.size());
         return sparse_[page][offset(id)];
     }
 
-    bool contain(EntityT entity) const noexcept {
+    //! @brief does contain an entity
+    bool contain(entity_type entity) const noexcept {
         auto id = internal::entity_id(entity);
         auto page = this->page(id);
         if (page >= sparse_.size()) {
@@ -242,7 +241,7 @@ public:
         packed_.reserve(size);
     }
 
-    const EntityT& back() const noexcept {
+    const entity_type& back() const noexcept {
         return packed_.back();
     }
 
@@ -258,7 +257,7 @@ public:
         return const_cast<entity_type&>(std::as_const(*this).back());
     }
 
-    internal::sparse_set_iterator<basic_sparse_set> find(EntityT entity) noexcept {
+    internal::sparse_set_iterator<basic_sparse_set> find(entity_type entity) noexcept {
         return {this, index(entity)};
     }
 

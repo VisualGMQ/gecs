@@ -56,6 +56,11 @@ private:
 
 }
 
+/**
+ * @brief a help class to access resource from resource_cache
+ * 
+ * @tparam T  resource type
+ */
 template <typename T>
 class resource final {
 public:

@@ -5,6 +5,11 @@
 
 namespace gecs {
 
+/**
+ * @brief make basic_storage support signal system
+ * 
+ * @tparam T  basic_storage<>
+ */
 template <typename T>
 class sigh_mixin final : public T {
 public:
@@ -13,14 +18,17 @@ public:
     using payload_type = typename underlying_type::payload_type;
     using sigh_type = sigh<void(entity_type, payload_type& payload)>;
 
+    //! @brief get the construction signals
     auto& on_construct() noexcept {
         return this->construction_;
     }
 
+    //! @brief get the update signals
     auto& on_update() noexcept {
         return this->update_;
     }
 
+    //! @brief get the destruction signals
     auto& on_destruction() noexcept {
         return this->destruction_;
     }

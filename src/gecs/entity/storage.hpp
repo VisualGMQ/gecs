@@ -91,20 +91,33 @@ private:
 
 }
 
+/**
+ * @brief storage
+ * 
+ * storage aim to bind entity and component together, support quickly way to access entity and component
+ * 
+ * @tparam EntityT  the entity type
+ * @tparam Payload  the payload type
+ * @tparam PageSize  then page size for basic_sparse_set
+ * @tparam Allocator then allocator to allocate Payload
+ */
 template <typename EntityT, typename Payload, size_t PageSize, typename Allocator>
 class basic_storage: public basic_sparse_set<EntityT, PageSize> {
 public:
     using type = basic_storage<EntityT, Payload, PageSize, Allocator>;
     using payload_type = Payload;
     using entity_type = EntityT;
+    using entity_numeric_type = typename internal::entity_traits<EntityT>::entity_type;
     using allocator_type = Allocator;
     using alloc_traits = std::allocator_traits<allocator_type>;
     using payload_container_type = std::vector<typename alloc_traits::pointer, typename alloc_traits::template rebind_alloc<typename alloc_traits::pointer>>;
     using base_type = basic_sparse_set<EntityT, PageSize>;
     using size_type = typename base_type::size_type;
 
+    //! @brief bind a payload to an entity
+    //! @warning payload can't exists, otherwise will abort
     template <typename... Args>
-    Payload& insert(EntityT entity, Args&&... args) noexcept {
+    Payload& insert(entity_type entity, Args&&... args) noexcept {
         ECS_ASSERT("storage already has entity", !base_type::contain(entity));
 
         base_type::insert(entity);
@@ -112,8 +125,10 @@ public:
         return *(new(assure(idx)[idx]) Payload{std::forward<Args>(args)...});
     }
 
+    //! @brief emplace a payload and bind it to an entity
+    //! @warning payload can't exists, otherwise will abort
     template <typename... Args>
-    Payload& emplace(EntityT entity, Args&&... args) noexcept {
+    Payload& emplace(entity_type entity, Args&&... args) noexcept {
         ECS_ASSERT("storage already has entity", !base_type::contain(entity));
 
         base_type::insert(entity);
@@ -125,7 +140,8 @@ public:
         return base_type::size();
     }
 
-    void remove(EntityT entity) noexcept override {
+    //! @brief remove the entity and it's payload
+    void remove(entity_type entity) noexcept override {
         ECS_ASSERT("entity not exists", base_type::contain(entity));
 
         auto idx = this->index(entity);
@@ -134,8 +150,10 @@ public:
         base_type::remove(entity);
     }
 
+    //! @brief replace the entity and it's payload
+    //! @warning the entity must exists, otherwise will abort
     template <typename... Args>
-    Payload& replace(EntityT entity, Args&&... args) noexcept {
+    Payload& replace(entity_type entity, Args&&... args) noexcept {
         ECS_ASSERT("entity not exists", base_type::contain(entity));
 
         base_type::insert(entity);
@@ -153,15 +171,17 @@ public:
         return payloads_.empty();
     }
 
-    const Payload& operator[](EntityT entity) const noexcept {
+    //! @warning access the payload from entity
+    const Payload& operator[](entity_type entity) const noexcept {
         return *payloads_[base_type::index(entity)];
     }
 
-    Payload& operator[](EntityT entity) noexcept {
+    //! @warning access the payload from entity
+    Payload& operator[](entity_type entity) noexcept {
         return const_cast<Payload&>(std::as_const(*this).operator[](entity));
     }
 
-    auto find(EntityT entity) const noexcept {
+    auto find(entity_type entity) const noexcept {
         if (base_type::contain(entity)) {
             return internal::storage_iterator<type>{&payloads_, static_cast<typename internal::storage_iterator<type>::difference_type>(base_type::index(entity)) + 1};
         } else {
@@ -201,14 +221,17 @@ public:
         return rend();
     }
 
+    //! @warning get all payloads
     const payload_container_type& payloads() const noexcept {
         return payloads_;
     }
 
+    //! @warning get all payloads
     payload_container_type& payloads() noexcept {
         return const_cast<payload_container_type&>(std::as_const(*this).payloads());
     }
 
+    //! @warning remove all payloads
     void release() noexcept {
         size_t i = 0;
         allocator_type allocator{get_allocator()};
@@ -254,10 +277,12 @@ private:
 template <typename EntityT, size_t PageSize>
 class basic_storage<EntityT, EntityT, PageSize, void>: protected basic_sparse_set<EntityT, PageSize> {
 public:
+    using entity_type = EntityT;
+    using entity_numeric_type = typename internal::entity_traits<EntityT>::entity_type;
     using base_type = basic_sparse_set<EntityT, PageSize>;
     using size_type = typename base_type::size_type;
 
-    void remove(EntityT entity) noexcept override {
+    void remove(entity_type entity) noexcept override {
         if (!base_type::contain(entity)) {
             return;
         }
@@ -267,7 +292,7 @@ public:
         length_ --;
     }
 
-    bool contain(EntityT entity) const noexcept {
+    bool contain(entity_type entity) const noexcept {
         return base_type::contain(entity);
     }
 
@@ -288,13 +313,13 @@ public:
     }
 
     //! @brief create a new entity or reuse old entity
-    EntityT emplace() noexcept {
+    entity_type emplace() noexcept {
         length_ ++;
 
         if (length_ <= base_type::size()) {
-            return static_cast<EntityT>(base_type::data()[length_ - 1]);
+            return static_cast<entity_type>(base_type::data()[length_ - 1]);
         } else {
-            return base_type::insert(static_cast<EntityT>(base_type::size()));
+            return base_type::insert(static_cast<entity_type>(base_type::size()));
         }
     }
 

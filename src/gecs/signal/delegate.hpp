@@ -8,11 +8,21 @@ namespace gecs {
 template <typename Func>
 class delegate;
 
+/**
+ * @brief delegate
+ * 
+ * a delegate class for Observer Pattern
+ * 
+ * @tparam Ret 
+ * @tparam Args 
+ */
 template <typename Ret, typename... Args>
 class delegate<Ret(Args...)> final {
 public:
     using delegate_fn_type = Ret(const void*, Args...);
     using delegate_pointer_type = Ret(*)(const void*, Args...);
+    using fn_type = Ret(Args...);
+    using fn_pointer_type = Ret(Args...);
 
     delegate() = default;
 
@@ -87,6 +97,14 @@ public:
 
     bool operator!=(const delegate& o) const {
         return !(*this == o);
+    }
+
+    const void* payload() const noexcept {
+        return payload_;
+    }
+
+    auto fn() const noexcept {
+        return fn_;
     }
 
     ~delegate() {

@@ -8,6 +8,11 @@
 
 namespace gecs {
 
+/**
+ * @brief point to a type can be mutable accessed
+ * 
+ * @tparam T 
+ */
 template <typename T>
 struct mut;
 
@@ -138,6 +143,14 @@ using storage_for_with_constness_t = add_const_conditional<!is_mutable_v<Type>, 
 
 }
 
+/**
+ * @brief a help class for accessing entity and their components from basic_world
+ * 
+ * @tparam EntityT 
+ * @tparam PageSize 
+ * @tparam WorldT 
+ * @tparam Types 
+ */
 template <typename EntityT, size_t PageSize, typename WorldT, typename... Types>
 class basic_querier {
 public:

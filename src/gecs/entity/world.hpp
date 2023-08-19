@@ -5,7 +5,6 @@
 #include "querier.hpp"
 #include "commands.hpp"
 #include "resource.hpp"
-#include "helper.hpp"
 #include "gecs/core/ident.hpp"
 #include "gecs/core/utility.hpp"
 #include "gecs/core/type_list.hpp"
@@ -278,7 +277,7 @@ public:
     template <auto System>
     void regist_update_system() noexcept {
         update_systems_.emplace_back([](self_type& world) {
-            using type_list = typename update_system_traits<std::remove_reference_t<strip_function_pointer_to_type_t<decltype(System)>>>::types;
+            using type_list = typename update_system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
             invoke_update_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
         });
     }

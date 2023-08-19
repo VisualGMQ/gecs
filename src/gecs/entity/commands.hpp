@@ -5,6 +5,11 @@
 
 namespace gecs {
 
+/**
+ * @brief a help class for create/delete/replace entity/resource/component from basic_world
+ * 
+ * @tparam WorldT 
+ */
 template <typename WorldT>
 class basic_commands final {
 public:

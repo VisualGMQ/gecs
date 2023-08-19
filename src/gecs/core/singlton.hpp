@@ -5,6 +5,14 @@ namespace gecs {
 template <typename T, bool ExplicitInit, typename Loader>
 class singlton;
 
+/**
+ * @brief abstract singlton class for convienient implement Singlton Pattern
+ * 
+ * this singlton will init singlton automatically when call instance();
+ * 
+ * @tparam T 
+ * @tparam Loader a function object to point out how to create the singlton
+ */
 template <typename T, typename Loader>
 class singlton<T, false, Loader> {
 public:
@@ -15,6 +23,15 @@ public:
         return instance;
     }
 };
+
+/**
+ * @brief abstract singlton class for convienient implement Singlton Pattern
+ *
+ * this singlton must call init() to create instance before use instance(), and release singlton call destroy() after use
+ * 
+ * @tparam T 
+ * @tparam Loader a function object to point out how to create the singlton
+ */
 
 template <typename T, typename Loader>
 class singlton<T, true, Loader> {

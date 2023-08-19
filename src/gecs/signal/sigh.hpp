@@ -10,6 +10,14 @@ class sink;
 template <typename T>
 class sigh;
 
+/**
+ * @brief signal handler
+ * 
+ * a signal handler to simulate C# delegate. But trigger all delegates in insert order
+ * 
+ * @tparam Ret 
+ * @tparam Args 
+ */
 template <typename Ret, typename... Args>
 class sigh<Ret(Args...)> final {
 public:
@@ -28,6 +36,7 @@ public:
         return delegates_.empty();
     }
 
+    //! @brief call all delegates with arguments
     void trigger(Args... args) noexcept {
         for (auto& delegate : delegates_) {
             delegate(std::forward<Args>(args)...);
@@ -35,12 +44,12 @@ public:
     }
 
     auto& operator+=(const delegate_type& d) noexcept {
-        add(d);
+        delegates_.emplace_back(d);
         return *this;
     }
 
     auto& operator+=(delegate_type&& d) noexcept {
-        add(std::move(d));
+        delegates_.emplace_back(std::move(d));
         return *this;
     }
 
