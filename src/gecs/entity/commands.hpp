@@ -15,7 +15,7 @@ class basic_commands final {
 public:
     using entity_type = typename WorldT::entity_type; 
 
-    basic_commands(WorldT* world): world_(world) {}
+    basic_commands(WorldT& world): world_(&world) {}
 
     entity_type create() noexcept {
         return world_->create();

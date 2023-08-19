@@ -64,9 +64,10 @@ private:
 template <typename T>
 class resource final {
 public:
-    using resource_type = internal::remove_mut_t<T>;
-    using resource_reference_t = resource_type&;
-    using resource_const_reference_t = const resource_type&;
+    using resource_type = T;
+    using resource_raw_type = internal::remove_mut_t<T>;
+    using resource_reference_t = resource_raw_type&;
+    using resource_const_reference_t = const resource_raw_type&;
 
     std::conditional_t<internal::is_mutable_v<T>, resource_reference_t, resource_const_reference_t> get() {
        return internal::resource_cache<internal::remove_mut_t<T>>::instance().get();

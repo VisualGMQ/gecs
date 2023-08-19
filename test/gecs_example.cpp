@@ -13,7 +13,11 @@ struct Res {
     int value;
 };
 
-void update_system(commands cmds, querier<Name> querier, resource<Res> res) {
+struct Event {
+    int value;
+};
+
+void update_system(commands cmds, querier<Name> querier, resource<Res> res, event_dispatcher<Event> dispatcher) {
     auto it = querier.begin();
     REQUIRE(std::get<1>(*it).name == "ent2-trigged");
     it ++;

@@ -5,6 +5,7 @@
 #include "querier.hpp"
 #include "commands.hpp"
 #include "resource.hpp"
+#include "event_dispatcher.hpp"
 #include "gecs/core/ident.hpp"
 #include "gecs/core/utility.hpp"
 #include "gecs/core/type_list.hpp"
@@ -67,6 +68,20 @@ struct is_resource<resource<T>> {
 template<typename T>
 constexpr bool is_resource_v = is_resource<T>::value;
 
+template <typename T>
+struct is_event_dispatcher {
+    static constexpr bool value = false;
+};
+
+template <typename T, typename WorldT>
+struct is_event_dispatcher<basic_event_dispatcher<T, WorldT>> {
+    static constexpr bool value = true;
+};
+
+template <typename T>
+constexpr bool is_event_dispatcher_v = is_event_dispatcher<T>::value;
+
+
 template <typename WorldT, typename Querier>
 struct querier_construct_helper;
 
@@ -79,30 +94,36 @@ struct querier_construct_helper<WorldT, basic_querier<EntityT, PageSize, WorldT,
     }
 };
 
-template <typename T>
-T construct_resource() {
-    return T{};
+template <typename T, typename WorldT>
+T construct_resource(WorldT& world) noexcept {
+    return world.template res<typename T::resource_type>();
 }
 
-template <typename WorldT, typename Querier>
+template <typename T, typename WorldT>
+T construct_event_dispatcher(WorldT& world) {
+    return world.template event_dispatcher<typename T::event_type>();
+}
+
+template <typename Querier, typename WorldT>
 auto construct_querier(WorldT& world) {
     return querier_construct_helper<WorldT, Querier>{}(world);
 }
 
 template <typename WorldT>
 typename WorldT::commands_type construct_commands(WorldT& world) {
-    return typename WorldT::commands_type{&world};
+    return world.commands();
 }
-
 
 template <typename WorldT, typename T>
 auto construct(WorldT& world) {
     if constexpr (is_querier_v<T>) {
-        return construct_querier<WorldT, T>(world);
+        return construct_querier<T>(world);
     } else if constexpr (is_commands_v<T>) {
         return construct_commands<WorldT>(world);
     } else if constexpr (is_resource_v<T>) {
-        return construct_resource<T>();
+        return construct_resource<T>(world);
+    } else if constexpr (is_event_dispatcher_v<T>) {
+        return construct_event_dispatcher<T>(world);
     } else {
         ECS_ASSERT("can't construct a unsupport type", false);
     }
@@ -124,11 +145,15 @@ public:
     using pool_container_reference = pool_container_type&;
     using entity_type = EntityT;
     using system_type = void(*)(self_type&);
-    using system_container_type = std::vector<system_type>;
+    using system_container_type = std::vector<system_type>; 
+
     static constexpr size_t page_size = PageSize;
 
     template <typename... Types>
     using querier_type = basic_querier<EntityT, PageSize, self_type, Types...>;
+
+    template <typename T>
+    using event_dispatcher_type = basic_event_dispatcher<T, self_type>;
 
     using commands_type = basic_commands<self_type>;
     
@@ -177,7 +202,7 @@ public:
 
     template <typename Type>
     const Type& get(EntityT entity) const noexcept {
-        auto id = id_generator::gen<Type>();
+        auto id = component_id_generator::gen<Type>();
         return static_cast<storage_for_t<Type>&>(*pools_[id])[entity];
     }
 
@@ -193,7 +218,7 @@ public:
 
     template <typename Type>
     bool contain(EntityT entity) const noexcept {
-        auto id = id_generator::gen<Type>();
+        auto id = component_id_generator::gen<Type>();
         if (id >= pools_.size()) {
             return false;
         } else {
@@ -236,7 +261,7 @@ public:
             return querier_type<Types...>(pool_tuple, std::get<0>(pool_tuple)->packed());
         } else {
             typename pool_base_type::packed_container_type entities;
-            std::array indices = { id_generator::gen<Types>()... };
+            std::array indices = { component_id_generator::gen<Types>()... };
             size_t idx = minimal_idx<Types...>(pools_, indices);
             for (int i = 0; i < pools_[idx]->size(); i++) {
                 auto entity = pools_[idx]->packed()[i];
@@ -250,12 +275,34 @@ public:
         }
     }
 
+    commands_type commands() noexcept {
+        return commands_type{*this};
+    }
+
+    template <typename T>
+    resource<T> res() noexcept {
+        return resource<T>{};
+    }
+
+    template <typename T>
+    event_dispatcher_type<T> event_dispatcher() noexcept {
+        auto dispatcher = event_dispatcher_type<T>{*this};
+        auto id = dispatcher_id_generator::gen<T>();
+        if (auto it = auto_dispatch_fns_.find(id); it != auto_dispatch_fns_.end()) {
+            auto_dispatch_fns_.emplace(id,
+            +[](self_type& self){
+                event_dispatcher_type<T>(self).update();
+            });
+        }
+        return dispatcher;
+    }
+
     template <auto System>
     void regist_startup_system() noexcept {
         startup_systems_.emplace_back([](self_type& world) {
             using type = strip_function_pointer_to_type_t<decltype(System)>;
             if constexpr (std::is_invocable_v<type, commands_type>) {
-                std::invoke(System, commands_type(&world));
+                std::invoke(System, commands_type(world));
             } else {
                 ECS_ASSERT("your startup system's type must be void(commands)", false);
             }
@@ -264,7 +311,7 @@ public:
 
     template <typename Type>
     storage_for_t<Type>& assure() noexcept {
-        size_t idx = id_generator::gen<Type>();
+        size_t idx = component_id_generator::gen<Type>();
         if (idx >= pools_.size()) {
             pools_.resize(idx + 1);
         }
@@ -297,6 +344,10 @@ public:
         for (auto sys : update_systems_) {
             sys(*this);
         }
+        for (auto [key, fn] : auto_dispatch_fns_) {
+            fn(*this);
+        }
+        auto_dispatch_fns_.clear();
     }
 
     template <typename T>
@@ -331,10 +382,14 @@ public:
     }
 
 private:
+    using event_auto_dispatch_fn_pointer = void(*)(self_type&);
+    using auto_dispatch_fn_container = std::unordered_map<dispatcher_id_generator::value_type, event_auto_dispatch_fn_pointer>;
+
     pool_container_type pools_;
     entities_container_type entities_;
     system_container_type startup_systems_;
     system_container_type update_systems_;
+    auto_dispatch_fn_container auto_dispatch_fns_;
 
     template <typename T>
     struct update_system_traits;
