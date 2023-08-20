@@ -6,8 +6,14 @@ add_library(gecs INTERFACE)
 target_include_directories(gecs INTERFACE "./src")
 target_compile_features(gecs INTERFACE cxx_std_17)
 
-option(GECS_ENABLE_TEST "enable unittest" ON)
-if (GECS_ENABLE_TEST)
+option(GECS_BUILD_TEST "enable unittest" ON)
+if (GECS_BUILD_TEST)
     enable_testing()
     add_subdirectory(test)
+endif()
+
+option(GECS_BUILD_DEMO "build demo" OFF)
+
+if (GECS_BUILD_DEMO)
+    add_subdirectory(demo)
 endif()

@@ -5,67 +5,71 @@
 
 namespace gecs {
 
-template <typename T>
+template <typename T, typename... Ts>
 class event_dispatcher_singlton;
 
 namespace internal {
 
-template <typename T>
+template <typename T, typename... Ts>
 struct dispatcher_loader final {
-    using type = event_dispatcher_singlton<T>;
+    using type = event_dispatcher_singlton<T, Ts...>;
 
     type operator()() const noexcept {
         return type{};
     }
 };
 
-template <typename T>
-class event_dispatcher_singlton: public dispatcher<T>, public singlton<event_dispatcher_singlton<T>, false, internal::dispatcher_loader<T>> { };
+template <typename T, typename... Ts>
+struct event_dispatcher_singlton: public dispatcher<T, Ts...>, public singlton<event_dispatcher_singlton<T, Ts...>, false, internal::dispatcher_loader<T, Ts...>> {
+    using dispatcher_type = dispatcher<T, Ts...>;
+};
 
 }
 
 template <typename T, typename WorldT>
 class basic_event_dispatcher final {
 public:
-    using size_type = typename dispatcher<T>::size_type;
-    using event_type = typename dispatcher<T>::event_type;
+    using dispatcher_singlton_type = internal::event_dispatcher_singlton<T, WorldT&>;
+    using dispatcher_type = typename dispatcher_singlton_type::dispatcher_type;
+    using size_type = typename dispatcher_type::size_type;
+    using event_type = typename dispatcher_type::event_type;
 
     basic_event_dispatcher(WorldT& world): world_(&world) { }
 
     auto sink() noexcept {
-        return internal::event_dispatcher_singlton<T>::instance().sink();
+        return dispatcher_singlton_type::instance().sink();
     }
 
     //! @brief trigger all delegates immediately
     void trigger(const T& event) noexcept {
-        return internal::event_dispatcher_singlton<T>::instance().trigger();
+        return dispatcher_singlton_type::instance().trigger();
     }
 
     //! @brief trigger all delegates by cached events
     void update() noexcept {
-        return internal::event_dispatcher_singlton<T>::instance().update();
+        return dispatcher_singlton_type::instance().update(*world_);
     }
 
     //! @brief cache event
     template <typename... Args>
     void enqueue(Args&&... args) noexcept {
-        internal::event_dispatcher_singlton<T>::instance().enqueue(std::forward<Args>(args)...);
+        dispatcher_singlton_type::instance().enqueue(std::forward<Args>(args)...);
     }
 
     void clear() noexcept {
-        return internal::event_dispatcher_singlton<T>::instance().clear();
+        return dispatcher_singlton_type::instance().clear();
     }
 
     void clear_cache() noexcept {
-        return internal::event_dispatcher_singlton<T>::instance().clear_cache();
+        return dispatcher_singlton_type::instance().clear_cache();
     }
 
     size_type size() const noexcept {
-        return internal::event_dispatcher_singlton<T>::instance().size();
+        return dispatcher_singlton_type::instance().size();
     }
 
     bool empty() const noexcept {
-        return internal::event_dispatcher_singlton<T>::instance().empty();
+        return dispatcher_singlton_type::instance().empty();
     }
 
 private:

@@ -2,6 +2,8 @@
 
 #include "delegate.hpp"
 
+#include <vector>
+
 namespace gecs {
 
 template <typename SighT>

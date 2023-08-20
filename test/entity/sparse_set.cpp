@@ -113,7 +113,7 @@ TEST_CASE("pump") {
     sparse_set set;
 
     set.insert(Entity(1));
-    REQUIRE(set.pump(Entity(1)) == 1);
+    REQUIRE(set.pump(Entity(1), static_cast<sparse_set::entity_type>(set.packed().back())) == 1);
     REQUIRE(set.size() == 1);
     REQUIRE(*(set.begin()) == 1);
 
@@ -123,7 +123,7 @@ TEST_CASE("pump") {
     set.insert(Entity(3));
     REQUIRE(*set.begin() == 3);
 
-    set.pump(Entity(2));
+    set.pump(Entity(2), static_cast<sparse_set::entity_type>(set.packed().back()));
     REQUIRE(set.size() == 3);
     REQUIRE(*set.begin() == 2);
     REQUIRE(*(set.begin() + 1) == 3);

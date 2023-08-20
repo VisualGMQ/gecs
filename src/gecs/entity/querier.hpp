@@ -70,12 +70,12 @@ public:
     using difference_type = typename Container::difference_type;
     using iterator_category = std::random_access_iterator_tag;
 
-    querier_iterator(pool_container_type pools, const container_type& entities, size_type offset) noexcept: pools_(pools), entities_{&entities}, offset_(offset) { }
+    querier_iterator(pool_container_type pools, const container_type& entities, size_type offset) noexcept: pools_(pools), entities_{entities}, offset_(offset) { }
 
     auto operator*() noexcept {
-        auto entity = (*entities_)[index()];
+        auto entity = entities_[index()];
         return std::apply([&entity](auto*... pool){
-            return std::tuple_cat(std::make_tuple(entity), std::forward_as_tuple((*pool)[static_cast<EntityT>(entity)])...);
+            return std::tuple_cat(std::make_tuple(static_cast<entity_type>(entity)), std::forward_as_tuple((*pool)[static_cast<EntityT>(entity)])...);
         }, pools_);
     }
 
@@ -123,7 +123,7 @@ public:
     }
 
 private:
-    const container_type* entities_;
+    container_type entities_;
     size_type offset_;
     pool_container_type pools_;
 

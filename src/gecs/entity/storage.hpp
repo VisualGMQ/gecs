@@ -287,7 +287,7 @@ public:
             return;
         }
 
-        auto& ref = base_type::pump(entity);
+        auto& ref = base_type::pump(entity, static_cast<entity_type>(base_type::packed()[length_ - 1]));
         ref = internal::entity_inc_version(ref);
         length_ --;
     }

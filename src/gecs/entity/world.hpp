@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <unordered_map>
 
 namespace gecs {
 
@@ -129,6 +130,11 @@ auto construct(WorldT& world) {
     }
 }
 
+template <typename WorldT, typename... Ts>
+auto construct_by_types(WorldT& world) {
+    return std::make_tuple(construct<Ts>...);
+}
+
 }
 
 template <typename EntityT, size_t PageSize>
@@ -156,11 +162,9 @@ public:
     using event_dispatcher_type = basic_event_dispatcher<T, self_type>;
 
     using commands_type = basic_commands<self_type>;
-    
-    using custom_startup_system_t = void(commands_type);
 
     template<typename... Ts>
-    using custom_update_system_t = void(Ts...);
+    using system_t = void(Ts...);
 
     template <typename Type>
     struct storage_for_by_mutable {
@@ -171,7 +175,8 @@ public:
     using storage_for_by_mutable_t = typename storage_for_by_mutable<Type>::type;
 
     entity_type create() noexcept {
-        return entities_.emplace();
+        auto entity = entities_.emplace();
+        return entity;
     }
 
     void destroy(EntityT entity) noexcept {
@@ -261,14 +266,27 @@ public:
             return querier_type<Types...>(pool_tuple, std::get<0>(pool_tuple)->packed());
         } else {
             typename pool_base_type::packed_container_type entities;
-            std::array indices = { component_id_generator::gen<Types>()... };
-            size_t idx = minimal_idx<Types...>(pools_, indices);
-            for (int i = 0; i < pools_[idx]->size(); i++) {
-                auto entity = pools_[idx]->packed()[i];
-                if (std::all_of(pools_.begin(), pools_.end(), [&entity](const typename pool_container_type::value_type& pool){
-                    return pool->contain(static_cast<entity_type>(entity));
-                })) {
-                    entities.push_back(entity);
+            std::array indices = { component_id_generator::gen<internal::remove_mut_t<Types>>()... };
+
+            bool valid_query = std::all_of(indices.begin(), indices.end(),
+                [&](auto idx) {
+                    return idx < pools_.size() && pools_[idx] != nullptr;
+                });
+
+            if (valid_query) {
+                size_t idx = minimal_idx<Types...>(pools_, indices);
+                for (int i = 0; i < pools_[idx]->size(); i++) {
+                    auto entity = pools_[idx]->packed()[i];
+                    bool is_contain_all = true;
+                    for (auto index : indices) {
+                        if (!pools_[index]->contain(static_cast<entity_type>(entity))) {
+                            is_contain_all = false;
+                            break;
+                        }
+                    }
+                    if (is_contain_all) {
+                        entities.push_back(entity);
+                    }
                 }
             }
             return querier_type<Types...>(std::tuple(&static_cast<storage_for_by_mutable_t<Types>&>(assure<internal::remove_mut_t<Types>>())...), entities);
@@ -288,25 +306,13 @@ public:
     event_dispatcher_type<T> event_dispatcher() noexcept {
         auto dispatcher = event_dispatcher_type<T>{*this};
         auto id = dispatcher_id_generator::gen<T>();
-        if (auto it = auto_dispatch_fns_.find(id); it != auto_dispatch_fns_.end()) {
+        if (auto it = auto_dispatch_fns_.find(id); it == auto_dispatch_fns_.end()) {
             auto_dispatch_fns_.emplace(id,
             +[](self_type& self){
                 event_dispatcher_type<T>(self).update();
             });
         }
         return dispatcher;
-    }
-
-    template <auto System>
-    void regist_startup_system() noexcept {
-        startup_systems_.emplace_back([](self_type& world) {
-            using type = strip_function_pointer_to_type_t<decltype(System)>;
-            if constexpr (std::is_invocable_v<type, commands_type>) {
-                std::invoke(System, commands_type(world));
-            } else {
-                ECS_ASSERT("your startup system's type must be void(commands)", false);
-            }
-        });
     }
 
     template <typename Type>
@@ -322,16 +328,27 @@ public:
     }
 
     template <auto System>
-    void regist_update_system() noexcept {
-        update_systems_.emplace_back([](self_type& world) {
-            using type_list = typename update_system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
-            invoke_update_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
+    void regist_startup_system() noexcept {
+        startup_systems_.emplace_back([](self_type& world) {
+            using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
+            invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
         });
     }
 
-    template <auto System, typename List, size_t... Idx>
-    static void invoke_update_system(self_type& world, std::index_sequence<Idx...>) {
-        std::invoke(System, internal::construct<self_type, type_list_element_t<Idx, List>>(world)...);
+    template <auto System>
+    void regist_update_system() noexcept {
+        update_systems_.emplace_back([](self_type& world) {
+            using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
+            invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
+        });
+    }
+
+    template <auto System>
+    void regist_shutdown_system() noexcept {
+        shutdown_systems_.emplace_back([](self_type& world) {
+            using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
+            invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
+        });
     }
 
     void startup() noexcept {
@@ -347,7 +364,12 @@ public:
         for (auto [key, fn] : auto_dispatch_fns_) {
             fn(*this);
         }
-        auto_dispatch_fns_.clear();
+    }
+
+    void shutdown() noexcept {
+        for (auto sys : shutdown_systems_) {
+            sys(*this);
+        }
     }
 
     template <typename T>
@@ -389,15 +411,21 @@ private:
     entities_container_type entities_;
     system_container_type startup_systems_;
     system_container_type update_systems_;
+    system_container_type shutdown_systems_;;
     auto_dispatch_fn_container auto_dispatch_fns_;
 
     template <typename T>
-    struct update_system_traits;
+    struct system_traits;
     
     template <typename... Ts>
-    struct update_system_traits<custom_update_system_t<Ts...>> {
+    struct system_traits<system_t<Ts...>> {
         using types = type_list<Ts...>;
     };
+
+    template <auto System, typename List, size_t... Idx>
+    static void invoke_arbitary_param_system(self_type& world, std::index_sequence<Idx...>) {
+        std::invoke(System, internal::construct<self_type, type_list_element_t<Idx, List>>(world)...);
+    }
 
     template <typename... Types>
     size_t minimal_idx(pool_container_reference& pools, const std::array<size_t, sizeof...(Types)>& indices) {

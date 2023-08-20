@@ -143,16 +143,16 @@ public:
         packed_.pop_back();
     }
 
-    //! @brief pump a entity to end and return it
-    entity_numeric_type& pump(entity_type entity) noexcept {
+    //! @brief pump a entity to the idx and return it
+    entity_numeric_type& pump(entity_type src, entity_type dst) noexcept {
         ECS_ASSERT("sparse set must not empty when pump element", !empty());
 
-        auto id = internal::entity_id(entity);
+        auto id = internal::entity_id(src);
         auto& ref1 = sparse_ref(id);
-        auto& ref2 = sparse_ref(internal::entity_id(packed_.back()));
-        std::swap(packed_.back(), packed_[ref1]);
+        auto& ref2 = sparse_ref(internal::entity_id(dst));
+        std::swap(packed_[ref2], packed_[ref1]);
         std::swap(ref1, ref2);
-        return packed_.back();
+        return packed_[ref1];
     }
 
     //! @brief get the entity index in packed
