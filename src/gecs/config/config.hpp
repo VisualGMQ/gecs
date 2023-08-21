@@ -3,6 +3,7 @@
 #include "gecs/entity/entity.hpp"
 
 #include <cstdint>
+#include <cstddef>
 
 
 #ifndef ENTITY_NUMERIC_TYPE
