@@ -27,28 +27,26 @@ void update_system(commands cmds, querier<Name> querier, resource<Res> res, even
     REQUIRE(res->value == 123);
 }
 
+void trigger(entity entity, Name& name) {
+    name.name += "-trigged";
+}
+
+void f(commands cmds) {
+    auto entity1 = cmds.create();
+    cmds.emplace<Name>(entity1, Name{"ent1"});
+    auto entity2 = cmds.create();
+    cmds.emplace<Name>(entity2, Name{"ent2"});
+
+    cmds.emplace_resource<Res>(Res{123});
+}
+
 TEST_CASE("gecs") {
     world world;
-
-    constexpr auto trigger = +[](entity entity, Name& name) {
-        name.name += "-trigged";
-    };
 
     delegate<void(entity, Name&)> d;
     d.connect<trigger>();
 
     world.on_construct<Name>().add(d);
-
-    // use non-capture lambda
-    constexpr auto f = +[](commands cmds) {
-        auto entity1 = cmds.create();
-        cmds.emplace<Name>(entity1, Name{"ent1"});
-        auto entity2 = cmds.create();
-        cmds.emplace<Name>(entity2, Name{"ent2"});
-
-        cmds.emplace_resource<Res>(Res{123});
-    };
-
     world.regist_startup_system<f>();
 
     // use normal function

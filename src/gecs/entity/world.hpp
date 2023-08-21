@@ -374,33 +374,30 @@ public:
 
     template <typename T>
     auto on_construct() noexcept {
-        return sink(assure<T>().on_construct());
+        if constexpr (std::is_same_v<T, entity_type>) {
+            return sink(entities_.on_construct());
+        } else {
+            return sink(assure<T>().on_construct());
+        }
     }
 
     template <typename T>
     auto on_destruction() noexcept {
-        return sink(assure<T>().on_destruct());
+        if constexpr (std::is_same_v<T, entity_type>) {
+            return sink(entities_.on_destruct());
+        } else {
+            return sink(assure<T>().on_destruct());
+        }
     }
 
     template <typename T>
     auto on_update() noexcept {
-        return sink(assure<T>().on_update());
-    }
-
-    template <>
-    auto on_construct<entity_type>() noexcept {
-        return sink(entities_.on_construct());
-    }
-
-    template <>
-    auto on_destruction<entity_type>() noexcept {
-        return sink(entities_.on_destruct());
-    }
-
-    template <>
-    auto on_update<entity_type>() noexcept {
-        ECS_ASSERT("entity don't has update listener", false);
-        return internal::null_entity_t{};
+        if constexpr (std::is_same_v<T, entity_type>) {
+            ECS_ASSERT("entity don't has update listener", false);
+            return internal::null_entity_t{};
+        } else {
+            return sink(assure<T>().on_update());
+        }
     }
 
 private:

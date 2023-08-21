@@ -3,6 +3,9 @@
 #include "gecs/core/utility.hpp"
 #include "gecs/core/type_list.hpp"
 
+#include <utility>
+#include <functional>
+
 namespace gecs {
 
 template <typename Func>

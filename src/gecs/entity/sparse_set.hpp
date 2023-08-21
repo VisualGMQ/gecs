@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <cassert>
 #include <memory>
+#include <limits>
+#include <utility>
 
 namespace gecs {
 

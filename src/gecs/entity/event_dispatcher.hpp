@@ -5,10 +5,10 @@
 
 namespace gecs {
 
-template <typename T, typename... Ts>
-class event_dispatcher_singlton;
-
 namespace internal {
+
+template <typename T, typename... Ts>
+struct event_dispatcher_singlton;
 
 template <typename T, typename... Ts>
 struct dispatcher_loader final {
@@ -18,6 +18,7 @@ struct dispatcher_loader final {
         return type{};
     }
 };
+
 
 template <typename T, typename... Ts>
 struct event_dispatcher_singlton: public dispatcher<T, Ts...>, public singlton<event_dispatcher_singlton<T, Ts...>, false, internal::dispatcher_loader<T, Ts...>> {

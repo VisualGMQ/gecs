@@ -26,7 +26,7 @@ public:
     template <auto Func>
     void add() noexcept {
         delegate_type d;
-        d.connect<Func>();
+        d.template connect<Func>();
         sigh_->delegates_.emplace_back(std::move(d));
     }
 
@@ -35,23 +35,23 @@ public:
     }
 
     void add(delegate_pointer_type d) noexcept {
-        delegate_type d;
-        d.connect(d);
-        sigh_->delegates_.emplace_back(std::move(d));
+        delegate_type delegate;
+        delegate.connect(d);
+        sigh_->delegates_.emplace_back(std::move(delegate));
     }
 
     template <typename Payload>
     void add(delegate_pointer_type d, Payload& payload) noexcept {
-        delegate_type d;
-        d.connect(d, payload);
-        sigh_->delegates_.emplace_back(std::move(d));
+        delegate_type delegate;
+        delegate.connect(d, payload);
+        sigh_->delegates_.emplace_back(std::move(delegate));
     }
 
     template <typename Payload>
     void add(delegate_pointer_type d, Payload* payload) noexcept {
-        delegate_type d;
-        d.connect(d, payload);
-        sigh_->delegates_.emplace_back(std::move(d));
+        delegate_type delegate;
+        delegate.connect(d, payload);
+        sigh_->delegates_.emplace_back(std::move(delegate));
     }
 
     template <auto Func, typename Payload>
@@ -71,21 +71,21 @@ public:
     template <auto Func, size_t... Index>
     void add(std::index_sequence<Index...> indices) noexcept {
         delegate_type d;
-        d.connect<Func>(indices);
+        d.template connect<Func>(indices);
         sigh_->delegates_.emplace_back(std::move(d));
     }
 
     template <auto Func, typename Payload, size_t... Index>
     void add(Payload& payload, std::index_sequence<Index...> indices) noexcept {
         delegate_type d;
-        d.connect<Func>(payload, indices);
+        d.template connect<Func>(payload, indices);
         sigh_->delegates_.emplace_back(std::move(d));
     }
 
     template <auto Func, typename Payload, size_t... Index>
     void add(Payload* payload, std::index_sequence<Index...> indices) noexcept {
         delegate_type d;
-        d.connect<Func>(payload, indices);
+        d.template connect<Func>(payload, indices);
         sigh_->delegates_.emplace_back(std::move(d));
     }
 

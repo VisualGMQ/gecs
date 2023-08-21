@@ -31,9 +31,9 @@ public:
     }
 
     //! @brief cache event
-    template <typename... Args>
-    void enqueue(Args&&... args) noexcept {
-        cache_.emplace_back(std::forward<Args>(args)...);
+    template <typename... Ts>
+    void enqueue(Ts&&... args) noexcept {
+        cache_.emplace_back(std::forward<Ts>(args)...);
     }
 
     void clear() noexcept {

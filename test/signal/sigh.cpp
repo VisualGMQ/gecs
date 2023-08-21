@@ -7,33 +7,36 @@ using namespace gecs;
 
 int gCallCount = 0;
 
+void f1() {
+    gCallCount += 1;
+}
+
+void f2() {
+    gCallCount += 2;
+}
+
+void f3() {
+    gCallCount += 3;
+}
+
 TEST_CASE("sigh") {
     sigh<void(void)> sigh;
 
     {
-        auto constexpr f1 = +[](){
-            gCallCount += 1;
-        };
         delegate<void()> d;
         d.connect<f1>();
         sigh += d;
     }
 
     {
-        auto constexpr f = +[](){
-            gCallCount += 2;
-        };
         delegate<void()> d;
-        d.connect<f>();
+        d.connect<f2>();
         sigh += d;
     }
 
     {
-        auto constexpr f = +[](){
-            gCallCount += 3;
-        };
         delegate<void()> d;
-        d.connect<f>();
+        d.connect<f3>();
         sigh += d;
     }
 

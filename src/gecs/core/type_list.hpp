@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstring>
+
 namespace gecs {
 
 template <typename... Ts>
