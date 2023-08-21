@@ -155,17 +155,34 @@ template <typename EntityT, size_t PageSize, typename WorldT, typename... Types>
 class basic_querier {
 public:
     using query_types = type_list<Types...>;
+    using query_raw_types = type_list<internal::remove_mut_t<Types>...>;
     using pool_container = std::tuple<internal::storage_for_with_constness_t<WorldT, Types>*...>;
     using pool_container_reference = pool_container&;
     using iterator = internal::querier_iterator<EntityT, std::decay_t<decltype(std::declval<typename WorldT::pool_base_type>().packed())>, internal::storage_for_with_constness_t<WorldT, Types>*...>;
     using const_iterator = const iterator;
     using entity_container = typename WorldT::pool_base_type::packed_container_type;
+    using entity_type = EntityT;
 
     basic_querier(pool_container pools, const entity_container& entities) noexcept: pools_(pools), entities_(entities) { }
     basic_querier(pool_container pools, entity_container&& entities) noexcept: pools_(pools), entities_(std::move(entities)) { }
 
     auto& entities() const noexcept {
         return entities_;
+    }
+
+    template <typename T, typename Compare>
+    auto& sort_by(Compare cmp) {
+        auto& pool = std::get<find_first_v<T, query_raw_types>>(pools_);
+        std::sort(entities_.begin(), entities_.end(), [&pool, cmp](const auto& e1, const auto& e2) {
+            return cmp((*pool)[static_cast<entity_type>(e1)], (*pool)[static_cast<entity_type>(e2)]);
+        });
+        return *this;
+    }
+
+    template <typename T>
+    auto& sort_by() {
+        sort_by<T>(std::less<T>{});
+        return *this;
     }
 
     iterator begin() noexcept {

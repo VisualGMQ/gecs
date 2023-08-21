@@ -70,25 +70,29 @@ TEST_CASE("single querier") {
 TEST_CASE("multiple querier") {
     world world;
 
-    std::array<world::entity_type, 3> entities = {
+    std::array<world::entity_type, 5> entities = {
+        world.create(),
+        world.create(),
         world.create(),
         world.create(),
         world.create(),
     };
 
-    world.emplace<Comp1>(entities[0], Comp1{1});
-    world.emplace<Comp1>(entities[1], Comp1{1});
+    world.emplace<Comp1>(entities[0], Comp1{8});
+    world.emplace<Comp1>(entities[1], Comp1{2});
+    world.emplace<Comp1>(entities[2], Comp1{0});
+    world.emplace<Comp1>(entities[3], Comp1{9});
     world.emplace<Comp2>(entities[1], Comp2{"ent2"});
-    world.emplace<Comp2>(entities[2], Comp2{"ent3"});
+    world.emplace<Comp2>(entities[4], Comp2{"ent3"});
 
     SECTION("non-mutable query") {
-        auto querier1 = world.query<Comp1, Comp2>();
-        auto begin = querier1.begin();
+        auto querier = world.query<Comp1, Comp2>();
+        auto begin = querier.begin();
 
-        REQUIRE(querier1.size() == 1);
-        REQUIRE(std::get<1>(*begin).value == 1);
+        REQUIRE(querier.size() == 1);
+        REQUIRE(std::get<1>(*begin).value == 2);
         REQUIRE(std::get<2>(*begin).name == "ent2");
-        REQUIRE(begin + 1 == querier1.end());
+        REQUIRE(begin + 1 == querier.end());
     }
 
     SECTION("invalid component query") {
@@ -96,5 +100,19 @@ TEST_CASE("multiple querier") {
 
         REQUIRE(querier.size() == 0);
         REQUIRE(querier.begin() == querier.end());
+    }
+
+    SECTION("sort") {
+        auto querier = world.query<Comp1>().sort_by<Comp1>([](const Comp1& c1, const Comp1& c2){
+            return c1.value < c2.value;
+        });
+        auto it = querier.begin();
+        REQUIRE(std::get<1>(*it).value == 0);
+        it ++;
+        REQUIRE(std::get<1>(*it).value == 2);
+        it ++;
+        REQUIRE(std::get<1>(*it).value == 9);
+        it ++;
+        REQUIRE(std::get<1>(*it).value == 8);
     }
 }

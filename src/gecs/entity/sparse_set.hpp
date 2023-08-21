@@ -267,6 +267,10 @@ public:
         return packed_;
     }
 
+    packed_container_type& packed() noexcept {
+        return const_cast<packed_container_type&>(std::as_const(*this).packed());
+    }
+
     virtual ~basic_sparse_set() = default;
 
 private:

@@ -4,6 +4,9 @@
 
 namespace gecs {
 
+template <typename EntityT, typename Payload, size_t PageSize, typename Allocator>
+class basic_storage;
+
 namespace internal {
 
 template <typename StorageT>
@@ -31,6 +34,10 @@ public:
 
     constexpr difference_type index() const noexcept {
         return offset_ - 1;
+    }
+
+    constexpr difference_type offset() const noexcept {
+        return offset_;
     }
 
     constexpr pointer data() const noexcept {
@@ -113,6 +120,8 @@ public:
     using payload_container_type = std::vector<typename alloc_traits::pointer, typename alloc_traits::template rebind_alloc<typename alloc_traits::pointer>>;
     using base_type = basic_sparse_set<EntityT, PageSize>;
     using size_type = typename base_type::size_type;
+    using iterator = internal::storage_iterator<type>;
+    using const_iterator = iterator;
 
     //! @brief bind a payload to an entity
     //! @warning payload can't exists, otherwise will abort
@@ -189,19 +198,19 @@ public:
         }
     }
 
-    auto begin() const noexcept {
-        return internal::storage_iterator<type>{&payloads_, static_cast<typename internal::storage_iterator<type>::difference_type>(payloads_.size())};
+    iterator begin() const noexcept {
+        return iterator{&payloads_, static_cast<typename internal::storage_iterator<type>::difference_type>(payloads_.size())};
     }
 
-    auto end() const noexcept {
-        return internal::storage_iterator<type>{&payloads_, 0};
+    iterator end() const noexcept {
+        return iterator{&payloads_, 0};
     }
 
-    auto cend() const noexcept {
+    const_iterator cend() const noexcept {
         return end();
     }
 
-    auto cbegin() const noexcept {
+    const_iterator cbegin() const noexcept {
         return begin();
     }
 
@@ -254,6 +263,14 @@ public:
         release();
     }
 
+    //! @brief use quick sort to sort payloads and packed array
+    template <typename Compare>
+    void sort(iterator start, iterator end, Compare comp) {
+        int left = end.index() + 1;
+        int right = start.index();
+        do_sort(left, right, [=](const Payload &p1, const Payload &p2) { return !comp(p1, p2); });
+    }
+
 private:
     payload_container_type payloads_;
 
@@ -271,6 +288,33 @@ private:
 
     allocator_type get_allocator() const noexcept {
         return payloads_.get_allocator();
+    }
+
+    template <typename Compare>
+    void do_sort(int left, int right, Compare comp) {
+        int low = left, high = right;
+        if (low >= high) {
+            return;
+        }
+
+        Payload* pivot = payloads_[low];
+        entity_numeric_type entity_pivot = base_type::packed()[low];
+        while (low < high) {
+            while (low < high && comp(*pivot, *payloads_[high])) {
+                high --;
+            }
+            payloads_[low] = payloads_[high];
+            base_type::packed()[low] = base_type::packed()[high];
+            while (low < high && comp(*payloads_[low], *pivot)) {
+                low ++;
+            }
+            payloads_[high] = payloads_[low];
+            base_type::packed()[high] = base_type::packed()[low];
+        }
+        payloads_[low] = pivot;
+        base_type::packed()[low] = entity_pivot;
+        do_sort(left, low - 1, comp);
+        do_sort(low + 1, right, comp);
     }
 };
 
