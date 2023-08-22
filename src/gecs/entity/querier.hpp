@@ -173,7 +173,7 @@ public:
     template <typename T, typename Compare>
     auto& sort_by(Compare cmp) {
         auto& pool = std::get<find_first_v<T, query_raw_types>>(pools_);
-        std::sort(entities_.begin(), entities_.end(), [&pool, cmp](const auto& e1, const auto& e2) {
+        std::sort(entities_.rbegin(), entities_.rend(), [&pool, cmp](const auto& e1, const auto& e2) {
             return cmp((*pool)[static_cast<entity_type>(e1)], (*pool)[static_cast<entity_type>(e2)]);
         });
         return *this;

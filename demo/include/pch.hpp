@@ -1,7 +1,6 @@
 #pragma once
 
 #include "SDL.h"
-#include "SDL_image.h"
 #include "vmath.hpp"
 #include "gecs/gecs.hpp"
 

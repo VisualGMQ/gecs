@@ -328,27 +328,30 @@ public:
     }
 
     template <auto System>
-    void regist_startup_system() noexcept {
+    auto& regist_startup_system() noexcept {
         startup_systems_.emplace_back([](self_type& world) {
             using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
             invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
         });
+        return *this;
     }
 
     template <auto System>
-    void regist_update_system() noexcept {
+    auto& regist_update_system() noexcept {
         update_systems_.emplace_back([](self_type& world) {
             using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
             invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
         });
+        return *this;
     }
 
     template <auto System>
-    void regist_shutdown_system() noexcept {
+    auto& regist_shutdown_system() noexcept {
         shutdown_systems_.emplace_back([](self_type& world) {
             using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
             invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
         });
+        return *this;
     }
 
     void startup() noexcept {
