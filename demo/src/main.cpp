@@ -1,79 +1,82 @@
 #include "game_ctx.hpp"
-#include "anim.hpp"
-#include "physics.hpp"
-#include "consts.hpp"
-#include "ticker.hpp"
-#include "sprite.hpp"
+#include "defs.hpp"
 
-enum DepthLayer {
-    LandDepth = 0,
-    TankDepth,
-    BulletDepth,
-};
-
-// a tag for falling stone entity
-struct FallingStone {
-    int hp;
-};
-// a tag for Bullet entity
-struct Bullet {
-    int damage;
-};
-// a tag for player's tank entity
-struct Tank {
-    int hp;
-    int score;
-};
-
-gecs::entity CreateBullet(const Vector2& init_pos, const Vector2& vel, gecs::commands cmds, gecs::resource<AnimManager> anim_mgr) {
-    auto entity = cmds.create();
-    cmds.emplace<Animation>(entity, *(anim_mgr->Find("shell_fly")));
-    cmds.emplace<Sprite>(entity, Image{}, init_pos, DepthLayer::BulletDepth);
-    cmds.emplace<Bullet>(entity, Bullet{1});
-    cmds.emplace<RigidBody>(entity, RigidBody{vel, Rect{15, 0, 15, 15}});
-    return entity;
-}
-
-gecs::entity CreateFallingStone(const Vector2& init_pos, const Vector2& vel, gecs::commands cmds, gecs::resource<AnimManager> anim_mgr) {
-    auto entity = cmds.create();
-    cmds.emplace<Animation>(entity, *(anim_mgr->Find("shell_fly")));
-    cmds.emplace<Sprite>(entity, Image{}, init_pos, DepthLayer::BulletDepth);
-    cmds.emplace<FallingStone>(entity, FallingStone{1});
-    cmds.emplace<RigidBody>(entity, RigidBody{vel, Rect{15, 0, 15, 15}});
-    return entity;
-}
+#include <random>
 
 // startup system to init SDL and resources
-void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit) {
-    SDL_Init(SDL_INIT_EVERYTHING);
+void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit,
+             gecs::event_dispatcher<SDL_KeyboardEvent> keyboard) {
+  SDL_Init(SDL_INIT_EVERYTHING);
 
-    auto& ctx = cmds.emplace_resource<GameContext>(GameContext::Create("demo", 1024, 720));
-    ctx.renderer->SetScale(Vector2{ScaleFactor});
+  auto& ctx = cmds.emplace_resource<GameContext>(
+      GameContext::Create("demo", 1024, 720, FallingStoneDuration));
+  ctx.renderer->SetScale(Vector2{ScaleFactor});
 
-    auto& anim_mgr = cmds.emplace_resource<AnimManager>();
+  auto& anim_mgr = cmds.emplace_resource<AnimManager>();
 
-    constexpr auto f = +[](const SDL_QuitEvent& event, gecs::world& world){
-        world.res<gecs::mut<GameContext>>()->shouldClose = true;
-    };
-    quit.sink().add<f>();
+  constexpr auto f = +[](const SDL_QuitEvent& event, gecs::world& world) {
+    world.res<gecs::mut<GameContext>>()->shouldClose = true;
+  };
+  quit.sink().add<f>();
 
-    auto& ts_mgr = cmds.emplace_resource<TextureManager>(ctx.renderer.get());
-    auto& tank_ts = ts_mgr.LoadTilesheet("tank", "demo/resources/tank.bmp", KeyColor, 2, 1);
-    auto& shell_ts = ts_mgr.LoadTilesheet("shell", "demo/resources/shell.bmp", KeyColor, 2, 1);
-    anim_mgr.Create("shell_fly", {Frame(shell_ts.Get(0, 0), 3), Frame(shell_ts.Get(1, 0), 3)}).SetLoop(-1).Play();
+  constexpr auto f2 = +[](const SDL_KeyboardEvent& event, gecs::world& world) {
+    if (event.type == SDL_KEYDOWN && event.keysym.scancode == SDL_SCANCODE_G) {
+        world.res<gecs::mut<GameContext>>()->debugMode = !world.res<gecs::mut<GameContext>>()->debugMode;
+    }
+  };
+  keyboard.sink().add<f2>();
 
-    auto tank_entity = cmds.create();
+  auto& ts_mgr = cmds.emplace_resource<TextureManager>(ctx.renderer.get());
+  auto& tank_ts =
+      ts_mgr.LoadTilesheet("tank", "demo/resources/tank.bmp", KeyColor, 2, 1);
+  auto& shell_ts =
+      ts_mgr.LoadTilesheet("shell", "demo/resources/shell.bmp", KeyColor, 2, 1);
+  auto& falling_stone_ts = ts_mgr.LoadTilesheet(
+      "falling_stone", "demo/resources/falling_stone.bmp", KeyColor, 2, 1);
+  auto& bomb_ts =
+      ts_mgr.LoadTilesheet("bomb", "demo/resources/bomb.bmp", KeyColor, 6, 1);
+  anim_mgr
+      .Create("shell_fly",
+              {Frame(shell_ts.Get(0, 0), 3), Frame(shell_ts.Get(1, 0), 3)})
+      .SetLoop(-1)
+      .Play();
+  anim_mgr
+      .Create("falling_stone", {Frame(falling_stone_ts.Get(0, 0), 3),
+                                Frame(falling_stone_ts.Get(1, 0), 3)})
+      .SetLoop(-1)
+      .Play();
+  anim_mgr
+      .Create("bomb", {Frame(bomb_ts.Get(0, 0), 2), Frame(bomb_ts.Get(1, 0), 2),
+                       Frame(bomb_ts.Get(2, 0), 2), Frame(bomb_ts.Get(3, 0), 2),
+                       Frame(bomb_ts.Get(4, 0), 2)})
+      .SetLoop(-1)
+      .Play();
 
-    auto tank_anim = anim_mgr.Create("tank_move", {Frame(tank_ts.Get(0, 0), 3), Frame(tank_ts.Get(1, 0), 3)}).SetLoop(-1).Play();
-    cmds.emplace<Animation>(tank_entity, tank_anim);
-    cmds.emplace<RigidBody>(tank_entity, RigidBody{Vector2{0, 0}, Rect{0, 10, 32, 22}});
-    cmds.emplace<Sprite>(tank_entity, tank_ts.Get(0, 0), Vector2{CanvaSize.w / 2.0f, TankY}, DepthLayer::TankDepth);
-    cmds.emplace<Tank>(tank_entity, Tank{TankInitLife, 0});
-    cmds.emplace<Ticker>(tank_entity, 10);
+  auto tank_entity = cmds.create();
 
-    auto land_entity = cmds.create();
-    cmds.emplace<Sprite>(land_entity, Image(ts_mgr.Load("land", "demo/resources/land.bmp", KeyColor)), Vector2{0.0f, CanvaSize.h - 100.0f}, DepthLayer::LandDepth);
-    cmds.emplace<RigidBody>(land_entity, RigidBody{Vector2{0, 0}, Rect{}});
+  auto tank_anim = anim_mgr
+                       .Create("tank_move", {Frame(tank_ts.Get(0, 0), 3),
+                                             Frame(tank_ts.Get(1, 0), 3)})
+                       .SetLoop(-1)
+                       .Play();
+  cmds.emplace<Animation>(tank_entity, tank_anim);
+  cmds.emplace<RigidBody>(tank_entity,
+                          RigidBody{Vector2{0, 0}, Rect{2, 10, 28, 22}});
+  cmds.emplace<Sprite>(tank_entity, tank_ts.Get(0, 0),
+                       Vector2{CanvaSize.w / 2.0f, TankY},
+                       DepthLayer::TankDepth);
+  cmds.emplace<Tank>(tank_entity, Tank{TankInitLife, 0});
+  cmds.emplace<Ticker>(tank_entity, 10);
+
+  auto land_entity = cmds.create();
+  cmds.emplace<Sprite>(
+      land_entity,
+      Image(ts_mgr.Load("land", "demo/resources/land.bmp", KeyColor)),
+      Vector2{0.0f, CanvaSize.h - 100.0f}, DepthLayer::LandDepth);
+  cmds.emplace<Land>(land_entity);
+  cmds.emplace<RigidBody>(
+      land_entity,
+      RigidBody{Vector2{0, 0}, Rect{0, 50, CanvaSize.w, CanvaSize.h}});
 }
 
 void UpdateAnim(gecs::querier<gecs::mut<Animation>> anims) {
@@ -121,10 +124,15 @@ void Shutdown(gecs::commands cmds) {
 }
 
 // dispatch `SDL_QuitEvent` to quit game
-void EventDispatcher(gecs::resource<gecs::mut<GameContext>> ctx, gecs::event_dispatcher<SDL_QuitEvent> quit) {
+void EventDispatcher(gecs::resource<gecs::mut<GameContext>> ctx,
+                     gecs::event_dispatcher<SDL_QuitEvent> quit,
+                     gecs::event_dispatcher<SDL_KeyboardEvent> keyboard) {
     while (SDL_PollEvent(&ctx->event)) {
         if (ctx->event.type == SDL_QUIT) {
             quit.enqueue(ctx->event.quit);
+        }
+        if (ctx->event.type == SDL_KEYDOWN || ctx->event.type == SDL_KEYUP) {
+            keyboard.enqueue(ctx->event.key);
         }
     }
 }
@@ -177,26 +185,43 @@ void RemoveBullet(gecs::commands cmds, gecs::querier<Bullet, Sprite> querier, ge
 }
 
 void RenderCollideBox(gecs::resource<gecs::mut<GameContext>> ctx, gecs::querier<Sprite, RigidBody> querier) {
-    for (auto& [_, sprite, body] : querier) {
-        ctx->renderer->SetColor({0, 255, 0, 255});
-        ctx->renderer->DrawRect(Rect{sprite.position + body.collide.position, body.collide.size});
+    if (ctx->debugMode) {
+        for (auto& [_, sprite, body] : querier) {
+            ctx->renderer->SetColor({0, 255, 0, 255});
+            ctx->renderer->DrawRect(Rect{sprite.position + body.collide.position, body.collide.size});
+        }
+    }
+}
+
+void RemoveFinishedBombAnim(gecs::commands cmds, gecs::querier<Bomb, Animation> querier) {
+    for (auto& [ent, _, anim] : querier) {
+        if (anim.IsFinish()) {
+            cmds.destroy(ent);
+        }
     }
 }
 
 template <typename T1, typename T2>
 void CollideHandle(gecs::commands cmds,
                   gecs::querier<T1, RigidBody, Sprite> querier1,
-                  gecs::querier<T2, RigidBody, Sprite> querier2) {
+                  gecs::querier<T2, RigidBody, Sprite> querier2,
+                  gecs::resource<AnimManager> anim_mgr) {
     
     float min = std::numeric_limits<float>::max();
+    std::vector<std::pair<Vector2, gecs::entity>> entities1;
+    std::vector<gecs::entity> entities2;
+
     for (auto& [ent1, _, body1, sprite1] : querier1) {
         gecs::entity entity = gecs::null_entity;
+        Rect entity1_rect(body1.collide.position + sprite1.position, body1.collide.size);
 
         for (auto& [ent2, _, body2, sprite2] : querier2) {
-            Rect stone_rect(body2.collide.position + sprite2.position, body2.collide.size);
-            Rect bullet_rect(body1.collide.position + sprite1.position, body1.collide.size);
-            if (IsRectIntersect(stone_rect, bullet_rect)) {
-                float t = RectCollidTime(bullet_rect, stone_rect, body1.velocity);
+            if (!cmds.alive(ent2)) {
+                break;
+            }
+            Rect entity2_rect(body2.collide.position + sprite2.position, body2.collide.size);
+            if (IsRectIntersect(entity2_rect, entity1_rect)) {
+                float t = RectCollidTime(entity1_rect, entity2_rect, body1.velocity);
                 if (t < min) {
                     entity = ent2;
                 }
@@ -204,22 +229,49 @@ void CollideHandle(gecs::commands cmds,
         }
 
         if (entity != gecs::null_entity) {
-            cmds.destroy(entity);
-            cmds.destroy(ent1);
+            entities1.push_back({{entity1_rect.x - 7, entity1_rect.y - 34}, ent1});
+            entities2.push_back(entity);
+        }
+    }
+
+    for (auto [pos, ent] : entities1) {
+        cmds.destroy(ent);
+        auto& body = CreateBombAnim(pos, FallingStoneVel, cmds, anim_mgr);
+        if constexpr(std::is_same_v<T2, Land>) {
+            body.velocity.Set(0, 0);
+        }
+    }
+
+    if constexpr (!std::is_same_v<T2, Land>) {
+        for (auto ent : entities2) {
+            cmds.destroy(ent);
         }
     }
 }
 
+void FallingStoneGenerate(gecs::commands cmds,
+                          gecs::resource<AnimManager> anim_mgr,
+                          gecs::resource<gecs::mut<GameContext>> ctx) {
+    ctx->stone_falling_ticker.Update();
+    if (ctx->stone_falling_ticker.isFinish()) {
+        float x = std::uniform_int_distribution<int>(50, CanvaSize.w - 50)(std::random_device());
+
+        CreateFallingStone(Vector2(x, -100), FallingStoneVel, cmds, anim_mgr);
+        ctx->stone_falling_ticker.Reset();
+    }
+}
+
 int main(int argc, char** argv) {
-    gecs::world world;
+    gecs::world gaming_world;
 
     // regist all systems
     // startup system
-    world.regist_startup_system<Startup>()
+    gaming_world.regist_startup_system<Startup>()
     // shutdown system
         .regist_shutdown_system<Shutdown>()
     // update system
         .regist_update_system<EventDispatcher>()
+        .regist_update_system<FallingStoneGenerate>()
         .regist_update_system<MoveTank>()
         .regist_update_system<ShootBullet>()
         .regist_update_system<PlayAnimByVel>()
@@ -230,22 +282,23 @@ int main(int argc, char** argv) {
         .regist_update_system<RenderSprite>()
         .regist_update_system<RenderCollideBox>()
         .regist_update_system<RemoveBullet>()
-        .regist_update_system<CollideHandle<Bullet, FallingStone>>()
+        .regist_update_system<RemoveFinishedBombAnim>()
+        .regist_update_system<CollideHandle<FallingStone, Bullet>>()
         .regist_update_system<CollideHandle<FallingStone, Tank>>()
-        .regist_update_system<CollideHandle<Bullet, Tank>>()
+        .regist_update_system<CollideHandle<FallingStone, Land>>()
         .regist_update_system<RenderUpdate>();
 
     // startup ecs
-    world.startup();
+    gaming_world.startup();
 
     // use world to access GameContext directly
-    gecs::resource<GameContext> res = world.res<GameContext>();
+    gecs::resource<GameContext> res = gaming_world.res<GameContext>();
     while (!res->shouldClose) {
         // update ecs
-        world.update();
+        gaming_world.update();
     }
 
     // shutdown ecs
-    world.shutdown();
+    gaming_world.shutdown();
     return 0;
 }

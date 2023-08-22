@@ -10,3 +10,5 @@ static const Vector2 WindowSize = {1024.0f, 720.0f};
 static const float ScaleFactor = 2.0;
 static const Vector2 CanvaSize = WindowSize / 2.0;
 static const float TankY = CanvaSize.h - 80;
+constexpr int FallingStoneDuration = 30;
+static const Vector2 FallingStoneVel = {0, 3};
