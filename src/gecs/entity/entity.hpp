@@ -109,7 +109,7 @@ public:
     template <typename EntityT>
     constexpr operator EntityT() const {
         using traits = entity_traits<EntityT>;
-        return traits::entity_mask | (traits::version_mask << traits::entity_mask_popcount);
+        return static_cast<EntityT>(traits::entity_mask | (traits::version_mask << traits::entity_mask_popcount));
     }
 
     constexpr bool operator==(null_entity_t) const {
@@ -142,8 +142,8 @@ constexpr bool operator!=(EntityT entity, null_entity_t null)  {
     return null != entity;
 }
 
-inline constexpr null_entity_t null_entity = {};
-
 }
+
+inline constexpr internal::null_entity_t null_entity = {};
 
 }

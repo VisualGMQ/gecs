@@ -11,91 +11,103 @@ enum DepthLayer {
     BulletDepth,
 };
 
-// a tag for bullet entity
-struct bullet {};
-// a tag for player's tank
-struct Tank {};
+// a tag for falling stone entity
+struct FallingStone {
+    int hp;
+};
+// a tag for Bullet entity
+struct Bullet {
+    int damage;
+};
+// a tag for player's tank entity
+struct Tank {
+    int hp;
+    int score;
+};
 
-gecs::entity create_bullet(const Vector2& init_pos, const Vector2& vel, gecs::commands cmds, gecs::resource<gecs::mut<TextureManager>> ts_mgr) {
+gecs::entity CreateBullet(const Vector2& init_pos, const Vector2& vel, gecs::commands cmds, gecs::resource<AnimManager> anim_mgr) {
     auto entity = cmds.create();
-    auto ts = ts_mgr->FindTilesheet("shell");
-    auto anim = animation()
-                    .add(ts->Get(0, 0), 3)
-                    .add(ts->Get(1, 0), 3)
-                    .set_loop(-1)
-                    .play();
-    cmds.emplace<animation>(entity, anim);
-    cmds.emplace<sprite>(entity, Image{}, init_pos, DepthLayer::BulletDepth);
-    cmds.emplace<bullet>(entity);
-    cmds.emplace<rigidbody>(entity, rigidbody{vel, Rect{}});
+    cmds.emplace<Animation>(entity, *(anim_mgr->Find("shell_fly")));
+    cmds.emplace<Sprite>(entity, Image{}, init_pos, DepthLayer::BulletDepth);
+    cmds.emplace<Bullet>(entity, Bullet{1});
+    cmds.emplace<RigidBody>(entity, RigidBody{vel, Rect{15, 0, 15, 15}});
     return entity;
 }
 
-// startup system to init SDL and 
-void startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit) {
+gecs::entity CreateFallingStone(const Vector2& init_pos, const Vector2& vel, gecs::commands cmds, gecs::resource<AnimManager> anim_mgr) {
+    auto entity = cmds.create();
+    cmds.emplace<Animation>(entity, *(anim_mgr->Find("shell_fly")));
+    cmds.emplace<Sprite>(entity, Image{}, init_pos, DepthLayer::BulletDepth);
+    cmds.emplace<FallingStone>(entity, FallingStone{1});
+    cmds.emplace<RigidBody>(entity, RigidBody{vel, Rect{15, 0, 15, 15}});
+    return entity;
+}
+
+// startup system to init SDL and resources
+void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit) {
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    auto& ctx = cmds.emplace_resource<game_context>(game_context::create("demo", 1024, 720));
+    auto& ctx = cmds.emplace_resource<GameContext>(GameContext::Create("demo", 1024, 720));
     ctx.renderer->SetScale(Vector2{ScaleFactor});
 
+    auto& anim_mgr = cmds.emplace_resource<AnimManager>();
+
     constexpr auto f = +[](const SDL_QuitEvent& event, gecs::world& world){
-        world.res<gecs::mut<game_context>>()->shouldClose = true;
+        world.res<gecs::mut<GameContext>>()->shouldClose = true;
     };
     quit.sink().add<f>();
 
     auto& ts_mgr = cmds.emplace_resource<TextureManager>(ctx.renderer.get());
     auto& tank_ts = ts_mgr.LoadTilesheet("tank", "demo/resources/tank.bmp", KeyColor, 2, 1);
-    ts_mgr.LoadTilesheet("shell", "demo/resources/shell.bmp", KeyColor, 2, 1);
+    auto& shell_ts = ts_mgr.LoadTilesheet("shell", "demo/resources/shell.bmp", KeyColor, 2, 1);
+    anim_mgr.Create("shell_fly", {Frame(shell_ts.Get(0, 0), 3), Frame(shell_ts.Get(1, 0), 3)}).SetLoop(-1).Play();
 
     auto tank_entity = cmds.create();
 
-    auto tank_anim = animation()
-                        .add(tank_ts.Get(0, 0), 3)
-                        .add(tank_ts.Get(1, 0), 3)
-                        .set_loop(-1).play();
-    cmds.emplace<animation>(tank_entity, tank_anim);
-    cmds.emplace<rigidbody>(tank_entity, rigidbody{Vector2{0, 0}, Rect{}});
-    cmds.emplace<sprite>(tank_entity, tank_ts.Get(0, 0), Vector2{CanvaSize.w / 2.0f, TankY}, DepthLayer::TankDepth);
-    cmds.emplace<Tank>(tank_entity);
-    cmds.emplace<ticker>(tank_entity, 10);
+    auto tank_anim = anim_mgr.Create("tank_move", {Frame(tank_ts.Get(0, 0), 3), Frame(tank_ts.Get(1, 0), 3)}).SetLoop(-1).Play();
+    cmds.emplace<Animation>(tank_entity, tank_anim);
+    cmds.emplace<RigidBody>(tank_entity, RigidBody{Vector2{0, 0}, Rect{0, 10, 32, 22}});
+    cmds.emplace<Sprite>(tank_entity, tank_ts.Get(0, 0), Vector2{CanvaSize.w / 2.0f, TankY}, DepthLayer::TankDepth);
+    cmds.emplace<Tank>(tank_entity, Tank{TankInitLife, 0});
+    cmds.emplace<Ticker>(tank_entity, 10);
 
     auto land_entity = cmds.create();
-    cmds.emplace<sprite>(land_entity, Image(ts_mgr.Load("land", "demo/resources/land.bmp", KeyColor)), Vector2{0.0f, CanvaSize.h - 100.0f}, DepthLayer::LandDepth);
-    cmds.emplace<rigidbody>(land_entity, rigidbody{Vector2{0, 0}, Rect{}});
+    cmds.emplace<Sprite>(land_entity, Image(ts_mgr.Load("land", "demo/resources/land.bmp", KeyColor)), Vector2{0.0f, CanvaSize.h - 100.0f}, DepthLayer::LandDepth);
+    cmds.emplace<RigidBody>(land_entity, RigidBody{Vector2{0, 0}, Rect{}});
 }
 
-void update_anim(gecs::querier<gecs::mut<animation>> anims) {
+void UpdateAnim(gecs::querier<gecs::mut<Animation>> anims) {
     for (auto& [_, anim] : anims) {
-        anim.update();
+        anim.Update();
     }
 }
 
-void update_rigidbody(gecs::querier<gecs::mut<sprite>, rigidbody> bodies) {
+void UpdateRigidbody(gecs::querier<gecs::mut<Sprite>, RigidBody> bodies) {
     for (auto& [entity, sprite, body] : bodies) {
         sprite.position += body.velocity;
     }
 }
 
-void play_anim_by_vel(gecs::querier<Tank, gecs::mut<animation>, rigidbody> querier) {
+void PlayAnimByVel(gecs::querier<Tank, gecs::mut<Animation>, RigidBody> querier) {
     for (auto& [_, tank, anim, body] : querier) {
         if (body.velocity.x == 0) {
-            anim.stop();
+            anim.Stop();
         } else {
-            anim.play();
+            anim.Play();
         }
     }
 }
 
-void update_anim_to_image(gecs::querier<animation, gecs::mut<sprite>> querier) {
+void UpdateAnimToImage(gecs::querier<Animation, gecs::mut<Sprite>> querier) {
     for (auto& [_, anim, sprite] : querier) {
-        if (anim.is_playing()) {
-            sprite.image = anim.cur_image();
+        if (anim.IsPlaying()) {
+            sprite.image = anim.CurImage();
         }
     }
 }
 
-void render_image(gecs::querier<sprite> querier, gecs::resource<game_context> ctx) {
-    for (auto& [_, sprite] : querier.sort_by<sprite>([](const sprite& s1, const sprite& s2){
+void RenderSprite(gecs::querier<Sprite> querier, gecs::resource<GameContext> ctx) {
+    for (auto& [_, sprite] : querier.sort_by<Sprite>([](const Sprite& s1, const Sprite& s2){
         return s1.depth < s2.depth;
     })) {
         ctx->renderer->DrawImage(sprite.image, sprite.position, std::nullopt);
@@ -103,13 +115,13 @@ void render_image(gecs::querier<sprite> querier, gecs::resource<game_context> ct
 }
 
 // shutdown system to clear all resources and close SDL
-void shutdown(gecs::commands cmds) {
+void Shutdown(gecs::commands cmds) {
     cmds.remove_resource<TextureManager>();
     SDL_Quit();
 }
 
 // dispatch `SDL_QuitEvent` to quit game
-void event_dispatcher(gecs::resource<gecs::mut<game_context>> ctx, gecs::event_dispatcher<SDL_QuitEvent> quit) {
+void EventDispatcher(gecs::resource<gecs::mut<GameContext>> ctx, gecs::event_dispatcher<SDL_QuitEvent> quit) {
     while (SDL_PollEvent(&ctx->event)) {
         if (ctx->event.type == SDL_QUIT) {
             quit.enqueue(ctx->event.quit);
@@ -118,14 +130,14 @@ void event_dispatcher(gecs::resource<gecs::mut<game_context>> ctx, gecs::event_d
 }
 
 // clear screen and render present
-void render_update(gecs::resource<game_context> ctx) {
+void RenderUpdate(gecs::resource<GameContext> ctx) {
     ctx->renderer->Present();
     ctx->renderer->SetColor({50, 50, 50, 255});
     ctx->renderer->Clear();
     SDL_Delay(30);
 }
 
-void move_tank(gecs::querier<Tank, gecs::mut<sprite>, gecs::mut<rigidbody>> querier) {
+void MoveTank(gecs::querier<Tank, gecs::mut<Sprite>, gecs::mut<RigidBody>> querier) {
     for (auto& [_, tank, sprite, rigidbody] : querier) {
         if (SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_A]) {
             rigidbody.velocity = Vector2{-TankSpeed, 0};
@@ -138,28 +150,62 @@ void move_tank(gecs::querier<Tank, gecs::mut<sprite>, gecs::mut<rigidbody>> quer
     }
 }
 
-void shoot_bullet(
-    gecs::commands cmds, gecs::resource<gecs::mut<TextureManager>> res,
-    gecs::querier<Tank, sprite, gecs::mut<ticker>> querier, gecs::resource<gecs::mut<game_context>> ctx) {
+void ShootBullet(
+    gecs::commands cmds, gecs::resource<AnimManager> anim_mgr,
+    gecs::querier<Tank, Sprite, gecs::mut<Ticker>> querier, gecs::resource<gecs::mut<GameContext>> ctx) {
     for (auto& [_, tank, sprite, ticker] : querier) {
-        if (ticker.is_end() && SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_J]) {
-            auto entity = create_bullet(sprite.position - Vector2(0, 16), Vector2{0, -5}, cmds, res);
+        if (ticker.isFinish() && SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_J]) {
+            auto entity = CreateBullet(sprite.position - Vector2(0, 16), Vector2{0, -5}, cmds, anim_mgr);
 
-            ticker.reset();
+            ticker.Reset();
         }
     }
 }
 
-void update_ticker(gecs::querier<gecs::mut<ticker>> tickers) {
+void UpdateTicker(gecs::querier<gecs::mut<Ticker>> tickers) {
     for (auto& [_, ticker] : tickers) {
-        ticker.update();
+        ticker.Update();
     }
 }
 
-void remove_bullet(gecs::commands cmds, gecs::querier<bullet, sprite> querier, gecs::resource<gecs::mut<game_context>> ctx) {
+void RemoveBullet(gecs::commands cmds, gecs::querier<Bullet, Sprite> querier, gecs::resource<gecs::mut<GameContext>> ctx) {
     for (auto& [entity, bullet, sprite] : querier) {
         if (sprite.position.y + 32 < 0 || sprite.position.y >= CanvaSize.h) {
             cmds.destroy(entity);
+        }
+    }
+}
+
+void RenderCollideBox(gecs::resource<gecs::mut<GameContext>> ctx, gecs::querier<Sprite, RigidBody> querier) {
+    for (auto& [_, sprite, body] : querier) {
+        ctx->renderer->SetColor({0, 255, 0, 255});
+        ctx->renderer->DrawRect(Rect{sprite.position + body.collide.position, body.collide.size});
+    }
+}
+
+template <typename T1, typename T2>
+void CollideHandle(gecs::commands cmds,
+                  gecs::querier<T1, RigidBody, Sprite> querier1,
+                  gecs::querier<T2, RigidBody, Sprite> querier2) {
+    
+    float min = std::numeric_limits<float>::max();
+    for (auto& [ent1, _, body1, sprite1] : querier1) {
+        gecs::entity entity = gecs::null_entity;
+
+        for (auto& [ent2, _, body2, sprite2] : querier2) {
+            Rect stone_rect(body2.collide.position + sprite2.position, body2.collide.size);
+            Rect bullet_rect(body1.collide.position + sprite1.position, body1.collide.size);
+            if (IsRectIntersect(stone_rect, bullet_rect)) {
+                float t = RectCollidTime(bullet_rect, stone_rect, body1.velocity);
+                if (t < min) {
+                    entity = ent2;
+                }
+            }
+        }
+
+        if (entity != gecs::null_entity) {
+            cmds.destroy(entity);
+            cmds.destroy(ent1);
         }
     }
 }
@@ -169,27 +215,31 @@ int main(int argc, char** argv) {
 
     // regist all systems
     // startup system
-    world.regist_startup_system<startup>()
+    world.regist_startup_system<Startup>()
     // shutdown system
-        .regist_shutdown_system<shutdown>()
+        .regist_shutdown_system<Shutdown>()
     // update system
-        .regist_update_system<event_dispatcher>()
-        .regist_update_system<move_tank>()
-        .regist_update_system<shoot_bullet>()
-        .regist_update_system<play_anim_by_vel>()
-        .regist_update_system<update_anim>()
-        .regist_update_system<update_anim_to_image>()
-        .regist_update_system<update_rigidbody>()
-        .regist_update_system<update_ticker>()
-        .regist_update_system<render_image>()
-        .regist_update_system<render_update>()
-        .regist_update_system<remove_bullet>();
+        .regist_update_system<EventDispatcher>()
+        .regist_update_system<MoveTank>()
+        .regist_update_system<ShootBullet>()
+        .regist_update_system<PlayAnimByVel>()
+        .regist_update_system<UpdateAnim>()
+        .regist_update_system<UpdateAnimToImage>()
+        .regist_update_system<UpdateRigidbody>()
+        .regist_update_system<UpdateTicker>()
+        .regist_update_system<RenderSprite>()
+        .regist_update_system<RenderCollideBox>()
+        .regist_update_system<RemoveBullet>()
+        .regist_update_system<CollideHandle<Bullet, FallingStone>>()
+        .regist_update_system<CollideHandle<FallingStone, Tank>>()
+        .regist_update_system<CollideHandle<Bullet, Tank>>()
+        .regist_update_system<RenderUpdate>();
 
     // startup ecs
     world.startup();
 
-    // use world to access game_context directly
-    gecs::resource<game_context> res = world.res<game_context>();
+    // use world to access GameContext directly
+    gecs::resource<GameContext> res = world.res<GameContext>();
     while (!res->shouldClose) {
         // update ecs
         world.update();

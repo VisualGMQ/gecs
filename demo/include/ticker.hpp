@@ -2,21 +2,21 @@
 
 #include "pch.hpp"
 
-class ticker final {
+class Ticker final {
 public:
-    ticker(int duration): duration_(duration), tick_(0) {}
+    Ticker(int duration): duration_(duration), tick_(0) {}
 
-    void update() {
+    void Update() {
         if (tick_ < duration_) {
             tick_ ++;
         }
     }
 
-    bool is_end() const {
+    bool isFinish() const {
         return tick_ >= duration_;
     }
 
-    void reset() {
+    void Reset() {
         tick_ = 0;
     }
 

@@ -173,7 +173,7 @@ public:
             return false;
         } else {
             auto pos = sparse_[page][offset(id)];
-            return pos != null_sparse_data && packed_[pos] != internal::null_entity && packed_[pos] == entity;
+            return pos != null_sparse_data && packed_[pos] != null_entity && packed_[pos] == entity;
         }
     }
 

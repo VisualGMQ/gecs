@@ -397,7 +397,7 @@ public:
     auto on_update() noexcept {
         if constexpr (std::is_same_v<T, entity_type>) {
             ECS_ASSERT("entity don't has update listener", false);
-            return internal::null_entity_t{};
+            return null_entity_t{};
         } else {
             return sink(assure<T>().on_update());
         }

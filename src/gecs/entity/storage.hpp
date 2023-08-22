@@ -266,8 +266,8 @@ public:
     //! @brief use quick sort to sort payloads and packed array
     template <typename Compare>
     void sort(iterator start, iterator end, Compare comp) {
-        int left = end.index() + 1;
-        int right = start.index();
+        int left = static_cast<int>(end.index() + 1);
+        int right = static_cast<int>(start.index());
         do_sort(left, right, [=](const Payload &p1, const Payload &p2) { return !comp(p1, p2); });
     }
 

@@ -171,6 +171,11 @@ struct Rect final {
         this->size = size;
     }
 
+    Rect(float x, float y, float w, float h) {
+        this->position.Set(x, y);
+        this->size.Set(w, h);
+    }
+
     bool IsIntersect(const Rect& rect) const {
         return !(
             position.x + size.x <= rect.position.x ||

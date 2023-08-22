@@ -15,21 +15,33 @@ void Renderer::Present() {
     SDL_RenderPresent(renderer_.get());
 }
 
-void Renderer::DrawRect(const SDL_Rect& rect) {
-    SDL_RenderDrawRect(renderer_.get(), &rect);
+void Renderer::DrawRect(const Rect& rect) {
+    SDL_Rect r = {static_cast<int>(rect.x),
+                  static_cast<int>(rect.y),
+                  static_cast<int>(rect.w),
+                  static_cast<int>(rect.h)};
+    SDL_RenderDrawRect(renderer_.get(), &r);
 }
 
-void Renderer::FillRect(const SDL_Rect& rect) {
-    SDL_RenderFillRect(renderer_.get(), &rect);
+void Renderer::FillRect(const Rect& rect) {
+    SDL_Rect r = {static_cast<int>(rect.x),
+                  static_cast<int>(rect.y),
+                  static_cast<int>(rect.w),
+                  static_cast<int>(rect.h)};
+    SDL_RenderFillRect(renderer_.get(), &r);
 }
 
-void Renderer::DrawLine(const SDL_Point& p1, const SDL_Point& p2) {
-    SDL_RenderDrawLine(renderer_.get(), p1.x, p1.y, p2.x, p2.y);
+void Renderer::DrawLine(const Vector2& p1, const Vector2& p2) {
+    SDL_RenderDrawLineF(renderer_.get(), p1.x, p1.y, p2.x, p2.y);
 }
 
-void Renderer::DrawTexture(Texture& texture, const SDL_Rect& rect, int x, int y) {
-    SDL_Rect dst = {x, y, rect.w, rect.h};
-    SDL_RenderCopy(renderer_.get(), texture.texture_.get(), &rect, &dst);
+void Renderer::DrawTexture(Texture& texture, const Rect& rect, int x, int y) {
+    SDL_Rect src = {static_cast<int>(rect.x),
+                    static_cast<int>(rect.y),
+                    static_cast<int>(rect.w),
+                    static_cast<int>(rect.h)};
+    SDL_Rect dst = {x, y, static_cast<int>(rect.w), static_cast<int>(rect.h)};
+    SDL_RenderCopy(renderer_.get(), texture.texture_.get(), &src, &dst);
 }
 
 void Renderer::DrawImage(const Image& image, const Vector2& position,

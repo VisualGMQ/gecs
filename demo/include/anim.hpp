@@ -2,45 +2,48 @@
 
 #include "texture.hpp"
 
-class frame final {
+class Frame final {
 public:
-    frame(Image image, int duration): image_(image), duration_(duration) {}
+    Frame(Image image, int duration): image_(image), duration_(duration) {}
 
-    const Image& image() const { return image_; }
-    int duration() const { return duration_; }
+    const Image& GetImage() const { return image_; }
+    int Duration() const { return duration_; }
 
 private:
     Image image_;
     int duration_;
 };
 
-class animation final {
+class Animation final {
 public:
+    Animation() = default;
+    Animation(const std::vector<Frame>& frames): frames_(frames) { }
+
     template <typename... Args>
-    auto& add(Args&&... args) {
+    auto& Add(Args&&... args) {
         frames_.emplace_back(std::forward<Args>(args)...);
         return *this;
     }
 
-    auto& set_loop(int loop) {
+    auto& SetLoop(int loop) {
         loop_ = loop;
         return *this;
     }
 
-    int get_loop() const {
+    int GetLoop() const {
         return loop_;
     }
 
-    const Image& cur_image() const {
-        return frames_[cur_frame_].image();
+    const Image& CurImage() const {
+        return frames_[cur_frame_].GetImage();
     }
 
-    void update(){
-        if (!is_playing()) {
+    void Update(){
+        if (!IsPlaying()) {
             return ; 
         }
 
-        if (is_end()) {
+        if (IsFinish()) {
             if (loop_ != 0) {
                 if (loop_ > 0) {
                     loop_ --;
@@ -52,8 +55,8 @@ public:
             }
         }
 
-        if (!is_end()) {
-            int duration = frames_[cur_frame_].duration();
+        if (!IsFinish()) {
+            int duration = frames_[cur_frame_].Duration();
             if (tick_ >= duration) {
                 tick_ -= duration;
                 cur_frame_ ++;
@@ -62,33 +65,59 @@ public:
         }
     }
 
-    bool is_playing() const {
+    bool IsPlaying() const {
         return playing_;
     }
 
-    auto& play() {
+    auto& Play() {
         playing_ = true;
         return *this;
     }
 
-    auto& stop() {
+    auto& Stop() {
         playing_ = false;
         return *this;
     }
 
-    bool is_end() const {
+    bool IsFinish() const {
         return cur_frame_ == int(frames_.size()) - 1 &&
-                tick_ == frames_[cur_frame_].duration();
+                tick_ == frames_[cur_frame_].Duration();
     }
 
-    int cur_frame_idx() const {
+    int CurFrameIdx() const {
         return cur_frame_;
     }
 
 private:
-    std::vector<frame> frames_;
+    std::vector<Frame> frames_;
     int cur_frame_ = 0;
     int tick_ = 0;
     int loop_ = 0;
     bool playing_ = false;
+};
+
+class AnimManager final {
+public:
+    auto& Create(const std::string name, const Animation& anim) {
+        return anims_.emplace(name, anim).first->second;
+    }
+
+    auto& Create(const std::string name, const std::vector<Frame>& frames) {
+        return anims_.emplace(name, frames).first->second;
+    }
+
+    const Animation* Find(const std::string name) const {
+        if (auto it = anims_.find(name); it != anims_.end()) {
+            return &it->second;
+        } else {
+            return nullptr;
+        }
+    }
+
+    Animation* Find(const std::string name) {
+        return const_cast<Animation*>(std::as_const(*this).Find(name));
+    }
+
+private:
+    std::unordered_map<std::string, Animation> anims_;
 };
