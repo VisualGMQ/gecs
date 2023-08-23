@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 namespace gecs {
 
 template <typename T, bool ExplicitInit, typename Loader>

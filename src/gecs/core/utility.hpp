@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <cassert>
 #include <cstddef>
+#include <utility>
 
 namespace gecs {
 
@@ -57,5 +58,15 @@ struct strip_function_pointer_to_type<Ret(Args...)> {
 
 template <typename T>
 using strip_function_pointer_to_type_t = typename strip_function_pointer_to_type<T>::type;
+
+
+template<std::size_t N, std::size_t... Seq>
+constexpr std::index_sequence<N + Seq ...> add(std::index_sequence<Seq...>) { return {}; }
+
+//! @brief make a std::index_sequence from a give range
+//! @tparam Min 
+//! @tparam Max 
+template <std::size_t Min, std::size_t Max>
+using make_index_range = decltype(add<Min>(std::make_index_sequence<Max - Min>()));
 
 }

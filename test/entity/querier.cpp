@@ -111,8 +111,8 @@ TEST_CASE("multiple querier") {
         it ++;
         REQUIRE(std::get<1>(*it).value == 2);
         it ++;
-        REQUIRE(std::get<1>(*it).value == 9);
-        it ++;
         REQUIRE(std::get<1>(*it).value == 8);
+        it ++;
+        REQUIRE(std::get<1>(*it).value == 9);
     }
 }

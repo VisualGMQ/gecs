@@ -10,6 +10,7 @@
 #include "gecs/core/utility.hpp"
 #include "gecs/core/type_list.hpp"
 #include "gecs/signal/sink.hpp"
+#include "system_constructor.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -30,110 +31,6 @@ struct storage_for<basic_sparse_set<EntityT, PageSize>, Type> {
 template <typename SparseSetT, typename Type>
 using storage_for_t = typename storage_for<SparseSetT, Type>::type;
 
-template <typename T>
-struct is_querier {
-    static constexpr bool value = false;
-};
-
-template <typename EntityT, size_t offset, typename WorldT, typename... Ts>
-struct is_querier<basic_querier<EntityT, offset, WorldT, Ts...>> {
-    static constexpr bool value = true;
-};
-
-template <typename T>
-constexpr bool is_querier_v = is_querier<T>::value;
-
-template <typename T>
-struct is_commands {
-    static constexpr bool value = false;
-};
-
-template <typename WorldT>
-struct is_commands<basic_commands<WorldT>> {
-    static constexpr bool value = true;
-};
-
-template <typename T>
-constexpr bool is_commands_v = is_commands<T>::value;
-
-template <typename T>
-struct is_resource {
-    static constexpr bool value = false;
-};
-
-template<typename T>
-struct is_resource<resource<T>> {
-    static constexpr bool value = true;
-};
-
-template<typename T>
-constexpr bool is_resource_v = is_resource<T>::value;
-
-template <typename T>
-struct is_event_dispatcher {
-    static constexpr bool value = false;
-};
-
-template <typename T, typename WorldT>
-struct is_event_dispatcher<basic_event_dispatcher<T, WorldT>> {
-    static constexpr bool value = true;
-};
-
-template <typename T>
-constexpr bool is_event_dispatcher_v = is_event_dispatcher<T>::value;
-
-
-template <typename WorldT, typename Querier>
-struct querier_construct_helper;
-
-template <typename EntityT, size_t PageSize, typename WorldT, typename... Ts>
-struct querier_construct_helper<WorldT, basic_querier<EntityT, PageSize, WorldT, Ts...>> {
-    using querier_type = basic_querier<EntityT, PageSize, WorldT, Ts...>;
-
-    querier_type operator()(WorldT& world) const {
-        return world.template query<Ts...>();
-    }
-};
-
-template <typename T, typename WorldT>
-T construct_resource(WorldT& world) noexcept {
-    return world.template res<typename T::resource_type>();
-}
-
-template <typename T, typename WorldT>
-T construct_event_dispatcher(WorldT& world) {
-    return world.template event_dispatcher<typename T::event_type>();
-}
-
-template <typename Querier, typename WorldT>
-auto construct_querier(WorldT& world) {
-    return querier_construct_helper<WorldT, Querier>{}(world);
-}
-
-template <typename WorldT>
-typename WorldT::commands_type construct_commands(WorldT& world) {
-    return world.commands();
-}
-
-template <typename WorldT, typename T>
-auto construct(WorldT& world) {
-    if constexpr (is_querier_v<T>) {
-        return construct_querier<T>(world);
-    } else if constexpr (is_commands_v<T>) {
-        return construct_commands<WorldT>(world);
-    } else if constexpr (is_resource_v<T>) {
-        return construct_resource<T>(world);
-    } else if constexpr (is_event_dispatcher_v<T>) {
-        return construct_event_dispatcher<T>(world);
-    } else {
-        ECS_ASSERT("can't construct a unsupport type", false);
-    }
-}
-
-template <typename WorldT, typename... Ts>
-auto construct_by_types(WorldT& world) {
-    return std::make_tuple(construct<Ts>...);
-}
 
 }
 
@@ -162,9 +59,6 @@ public:
     using event_dispatcher_type = basic_event_dispatcher<T, self_type>;
 
     using commands_type = basic_commands<self_type>;
-
-    template<typename... Ts>
-    using system_t = void(Ts...);
 
     template <typename Type>
     struct storage_for_by_mutable {
@@ -329,28 +223,19 @@ public:
 
     template <auto System>
     auto& regist_startup_system() noexcept {
-        startup_systems_.emplace_back([](self_type& world) {
-            using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
-            invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
-        });
+        startup_systems_.emplace_back(internal::system_constructor<self_type>::template construct<System>());
         return *this;
     }
 
     template <auto System>
     auto& regist_update_system() noexcept {
-        update_systems_.emplace_back([](self_type& world) {
-            using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
-            invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
-        });
+        update_systems_.emplace_back(internal::system_constructor<self_type>::template construct<System>());
         return *this;
     }
 
     template <auto System>
     auto& regist_shutdown_system() noexcept {
-        shutdown_systems_.emplace_back([](self_type& world) {
-            using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(System)>>>::types;
-            invoke_arbitary_param_system<System, type_list>(world, std::make_index_sequence<type_list::size>{});
-        });
+        shutdown_systems_.emplace_back(internal::system_constructor<self_type>::template construct<System>());
         return *this;
     }
 
@@ -413,19 +298,6 @@ private:
     system_container_type update_systems_;
     system_container_type shutdown_systems_;;
     auto_dispatch_fn_container auto_dispatch_fns_;
-
-    template <typename T>
-    struct system_traits;
-    
-    template <typename... Ts>
-    struct system_traits<system_t<Ts...>> {
-        using types = type_list<Ts...>;
-    };
-
-    template <auto System, typename List, size_t... Idx>
-    static void invoke_arbitary_param_system(self_type& world, std::index_sequence<Idx...>) {
-        std::invoke(System, internal::construct<self_type, type_list_element_t<Idx, List>>(world)...);
-    }
 
     template <typename... Types>
     size_t minimal_idx(pool_container_reference& pools, const std::array<size_t, sizeof...(Types)>& indices) {

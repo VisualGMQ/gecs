@@ -14,14 +14,14 @@ void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit,
 
   auto& anim_mgr = cmds.emplace_resource<AnimManager>();
 
-  constexpr auto f = +[](const SDL_QuitEvent& event, gecs::world& world) {
-    world.res<gecs::mut<GameContext>>()->shouldClose = true;
+  constexpr auto f = +[](const SDL_QuitEvent &event, gecs::resource<gecs::mut<GameContext>> ctx) {
+      ctx->shouldClose = true;
   };
   quit.sink().add<f>();
 
-  constexpr auto f2 = +[](const SDL_KeyboardEvent& event, gecs::world& world) {
+  constexpr auto f2 = +[](const SDL_KeyboardEvent& event, gecs::resource<gecs::mut<GameContext>> ctx) {
     if (event.type == SDL_KEYDOWN && event.keysym.scancode == SDL_SCANCODE_G) {
-        world.res<gecs::mut<GameContext>>()->debugMode = !world.res<gecs::mut<GameContext>>()->debugMode;
+        ctx->debugMode = !ctx->debugMode;
     }
   };
   keyboard.sink().add<f2>();
@@ -206,7 +206,6 @@ void CollideHandle(gecs::commands cmds,
                   gecs::querier<T1, RigidBody, Sprite> querier1,
                   gecs::querier<T2, RigidBody, Sprite> querier2,
                   gecs::resource<AnimManager> anim_mgr) {
-    
     float min = std::numeric_limits<float>::max();
     std::vector<std::pair<Vector2, gecs::entity>> entities1;
     std::vector<gecs::entity> entities2;
