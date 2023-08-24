@@ -4,7 +4,8 @@
 
 namespace gecs {
 
-template <typename EntityT, typename Payload, size_t PageSize, typename Allocator>
+template <typename EntityT, typename Payload, size_t PageSize,
+          typename Allocator>
 class basic_storage;
 
 namespace internal {
@@ -13,51 +14,55 @@ template <typename StorageT>
 class storage_iterator {
 public:
     using container_type = typename StorageT::payload_container_type;
-    using iterator_traits = std::iterator_traits<typename container_type::const_iterator>;
+    using iterator_traits =
+        std::iterator_traits<typename container_type::const_iterator>;
     using value_type = typename iterator_traits::value_type;
     using pointer = typename iterator_traits::pointer;
     using reference = typename iterator_traits::reference;
     using difference_type = typename iterator_traits::difference_type;
     using iterator_category = std::random_access_iterator_tag;
 
-    constexpr storage_iterator(): container_(nullptr), offset_(0u) {}
-    constexpr storage_iterator(const container_type* container): container_(container), offset_(0u) {}
-    constexpr storage_iterator(const container_type* container, difference_type offset) : container_(container), offset_(offset) {}
+    constexpr storage_iterator() : container_(nullptr), offset_(0u) {}
+
+    constexpr storage_iterator(const container_type* container)
+        : container_(container), offset_(0u) {}
+
+    constexpr storage_iterator(const container_type* container,
+                               difference_type offset)
+        : container_(container), offset_(offset) {}
 
     constexpr pointer operator->() const noexcept {
         return container_->data() + index();
     }
 
-    constexpr reference operator*() const noexcept {
-        return *operator->();
-    }
+    constexpr reference operator*() const noexcept { return *operator->(); }
 
-    constexpr difference_type index() const noexcept {
-        return offset_ - 1;
-    }
+    constexpr difference_type index() const noexcept { return offset_ - 1; }
 
-    constexpr difference_type offset() const noexcept {
-        return offset_;
-    }
+    constexpr difference_type offset() const noexcept { return offset_; }
 
     constexpr pointer data() const noexcept {
         return container_ ? container_->data() : nullptr;
     }
 
-    constexpr storage_iterator& operator+=(const difference_type step) noexcept {
+    constexpr storage_iterator& operator+=(
+        const difference_type step) noexcept {
         return offset_ -= step, *this;
     }
 
-    constexpr storage_iterator& operator-=(const difference_type step) noexcept {
+    constexpr storage_iterator& operator-=(
+        const difference_type step) noexcept {
         return operator+=(-step);
     }
 
-    constexpr storage_iterator operator+(const difference_type step) const noexcept {
+    constexpr storage_iterator operator+(
+        const difference_type step) const noexcept {
         storage_iterator copy = *this;
         return copy += step;
     }
 
-    constexpr storage_iterator operator-(const difference_type step) const noexcept {
+    constexpr storage_iterator operator-(
+        const difference_type step) const noexcept {
         return operator+(-step);
     }
 
@@ -78,7 +83,7 @@ public:
     constexpr storage_iterator& operator--() noexcept {
         return ++offset_, *this;
     }
-    
+
     constexpr bool operator==(const storage_iterator& o) const noexcept {
         return o.container_ == container_ && o.offset_ == offset_;
     }
@@ -96,28 +101,34 @@ private:
     difference_type offset_;
 };
 
-}
+}  // namespace internal
 
 /**
  * @brief storage
- * 
- * storage aim to bind entity and component together, support quickly way to access entity and component
- * 
+ *
+ * storage aim to bind entity and component together, support quickly way to
+ * access entity and component
+ *
  * @tparam EntityT  the entity type
  * @tparam Payload  the payload type
  * @tparam PageSize  then page size for basic_sparse_set
  * @tparam Allocator then allocator to allocate Payload
  */
-template <typename EntityT, typename Payload, size_t PageSize, typename Allocator>
-class basic_storage: public basic_sparse_set<EntityT, PageSize> {
+template <typename EntityT, typename Payload, size_t PageSize,
+          typename Allocator>
+class basic_storage : public basic_sparse_set<EntityT, PageSize> {
 public:
     using type = basic_storage<EntityT, Payload, PageSize, Allocator>;
     using payload_type = Payload;
     using entity_type = EntityT;
-    using entity_numeric_type = typename internal::entity_traits<EntityT>::entity_type;
+    using entity_numeric_type =
+        typename internal::entity_traits<EntityT>::entity_type;
     using allocator_type = Allocator;
     using alloc_traits = std::allocator_traits<allocator_type>;
-    using payload_container_type = std::vector<typename alloc_traits::pointer, typename alloc_traits::template rebind_alloc<typename alloc_traits::pointer>>;
+    using payload_container_type =
+        std::vector<typename alloc_traits::pointer,
+                    typename alloc_traits::template rebind_alloc<
+                        typename alloc_traits::pointer>>;
     using base_type = basic_sparse_set<EntityT, PageSize>;
     using size_type = typename base_type::size_type;
     using iterator = internal::storage_iterator<type>;
@@ -131,7 +142,7 @@ public:
 
         base_type::insert(entity);
         auto idx = base_type::index(entity);
-        return *(new(assure(idx)[idx]) Payload{std::forward<Args>(args)...});
+        return *(new (assure(idx)[idx]) Payload{std::forward<Args>(args)...});
     }
 
     //! @brief emplace a payload and bind it to an entity
@@ -142,12 +153,10 @@ public:
 
         base_type::insert(entity);
         auto idx = this->index(entity);
-        return *(new(assure(idx)[idx]) Payload{std::forward<Args>(args)...});
+        return *(new (assure(idx)[idx]) Payload{std::forward<Args>(args)...});
     }
 
-    size_type size() const noexcept {
-        return base_type::size();
-    }
+    size_type size() const noexcept { return base_type::size(); }
 
     //! @brief remove the entity and it's payload
     void remove(entity_type entity) noexcept override {
@@ -169,16 +178,12 @@ public:
         auto idx = this->index(entity);
         auto ptr = assure(idx)[idx];
         ptr->~Payload();
-        return *(new(ptr) Payload{std::forward<Args>(args)...});
+        return *(new (ptr) Payload{std::forward<Args>(args)...});
     }
 
-    size_type capacity() const noexcept {
-        return payloads_.capacity();
-    }
+    size_type capacity() const noexcept { return payloads_.capacity(); }
 
-    bool empty() const noexcept {
-        return payloads_.empty();
-    }
+    bool empty() const noexcept { return payloads_.empty(); }
 
     //! @warning access the payload from entity
     const Payload& operator[](entity_type entity) const noexcept {
@@ -192,43 +197,38 @@ public:
 
     auto find(entity_type entity) const noexcept {
         if (base_type::contain(entity)) {
-            return internal::storage_iterator<type>{&payloads_, static_cast<typename internal::storage_iterator<type>::difference_type>(base_type::index(entity)) + 1};
+            return internal::storage_iterator<type>{
+                &payloads_,
+                static_cast<
+                    typename internal::storage_iterator<type>::difference_type>(
+                    base_type::index(entity)) +
+                    1};
         } else {
             return end();
         }
     }
 
     iterator begin() const noexcept {
-        return iterator{&payloads_, static_cast<typename internal::storage_iterator<type>::difference_type>(payloads_.size())};
+        return iterator{
+            &payloads_,
+            static_cast<
+                typename internal::storage_iterator<type>::difference_type>(
+                payloads_.size())};
     }
 
-    iterator end() const noexcept {
-        return iterator{&payloads_, 0};
-    }
+    iterator end() const noexcept { return iterator{&payloads_, 0}; }
 
-    const_iterator cend() const noexcept {
-        return end();
-    }
+    const_iterator cend() const noexcept { return end(); }
 
-    const_iterator cbegin() const noexcept {
-        return begin();
-    }
+    const_iterator cbegin() const noexcept { return begin(); }
 
-    auto rbegin() const noexcept {
-        return std::make_reverse_iterator(end());
-    }
+    auto rbegin() const noexcept { return std::make_reverse_iterator(end()); }
 
-    auto rend() const noexcept {
-        return std::make_reverse_iterator(begin());
-    }
+    auto rend() const noexcept { return std::make_reverse_iterator(begin()); }
 
-    auto crbegin() const noexcept {
-        return rbegin();
-    }
+    auto crbegin() const noexcept { return rbegin(); }
 
-    auto crend() const noexcept {
-        return rend();
-    }
+    auto crend() const noexcept { return rend(); }
 
     //! @warning get all payloads
     const payload_container_type& payloads() const noexcept {
@@ -237,7 +237,8 @@ public:
 
     //! @warning get all payloads
     payload_container_type& payloads() noexcept {
-        return const_cast<payload_container_type&>(std::as_const(*this).payloads());
+        return const_cast<payload_container_type&>(
+            std::as_const(*this).payloads());
     }
 
     //! @warning remove all payloads
@@ -259,16 +260,16 @@ public:
         base_type::clear();
     }
 
-    ~basic_storage() {
-        release();
-    }
+    ~basic_storage() { release(); }
 
     //! @brief use quick sort to sort payloads and packed array
     template <typename Compare>
     void sort(iterator start, iterator end, Compare comp) {
         int left = static_cast<int>(end.index() + 1);
         int right = static_cast<int>(start.index());
-        do_sort(left, right, [=](const Payload &p1, const Payload &p2) { return !comp(p1, p2); });
+        do_sort(left, right, [=](const Payload& p1, const Payload& p2) {
+            return !comp(p1, p2);
+        });
     }
 
 private:
@@ -301,12 +302,12 @@ private:
         entity_numeric_type entity_pivot = base_type::packed()[low];
         while (low < high) {
             while (low < high && comp(*pivot, *payloads_[high])) {
-                high --;
+                high--;
             }
             payloads_[low] = payloads_[high];
             base_type::packed()[low] = base_type::packed()[high];
             while (low < high && comp(*payloads_[low], *pivot)) {
-                low ++;
+                low++;
             }
             payloads_[high] = payloads_[low];
             base_type::packed()[high] = base_type::packed()[low];
@@ -319,10 +320,12 @@ private:
 };
 
 template <typename EntityT, size_t PageSize>
-class basic_storage<EntityT, EntityT, PageSize, void>: protected basic_sparse_set<EntityT, PageSize> {
+class basic_storage<EntityT, EntityT, PageSize, void>
+    : protected basic_sparse_set<EntityT, PageSize> {
 public:
     using entity_type = EntityT;
-    using entity_numeric_type = typename internal::entity_traits<EntityT>::entity_type;
+    using entity_numeric_type =
+        typename internal::entity_traits<EntityT>::entity_type;
     using base_type = basic_sparse_set<EntityT, PageSize>;
     using size_type = typename base_type::size_type;
 
@@ -331,48 +334,40 @@ public:
             return;
         }
 
-        auto& ref = base_type::pump(entity, static_cast<entity_type>(base_type::packed()[length_ - 1]));
+        auto& ref = base_type::pump(
+            entity, static_cast<entity_type>(base_type::packed()[length_ - 1]));
         ref = internal::entity_inc_version(ref);
-        length_ --;
+        length_--;
     }
 
     bool contain(entity_type entity) const noexcept {
         return base_type::contain(entity);
     }
 
-    size_type size() const noexcept {
-        return length_;
-    }
+    size_type size() const noexcept { return length_; }
 
-    size_type capacity() const noexcept {
-        return base_type::capacity();
-    }
+    size_type capacity() const noexcept { return base_type::capacity(); }
 
-    size_type base_size() const noexcept {
-        return base_type::size();
-    }
+    size_type base_size() const noexcept { return base_type::size(); }
 
-    void reserve(size_type size) const noexcept {
-        base_type::reserve(size);
-    }
+    void reserve(size_type size) const noexcept { base_type::reserve(size); }
 
     //! @brief create a new entity or reuse old entity
     entity_type emplace() noexcept {
-        length_ ++;
+        length_++;
 
         if (length_ <= base_type::size()) {
             return static_cast<entity_type>(base_type::data()[length_ - 1]);
         } else {
-            return base_type::insert(static_cast<entity_type>(base_type::size()));
+            return base_type::insert(
+                static_cast<entity_type>(base_type::size()));
         }
     }
 
-    bool empty() const noexcept {
-        return length_ == 0;
-    }
+    bool empty() const noexcept { return length_ == 0; }
 
 private:
     size_type length_ = 0;
 };
 
-}
+}  // namespace gecs

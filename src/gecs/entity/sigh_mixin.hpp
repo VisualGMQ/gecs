@@ -7,7 +7,7 @@ namespace gecs {
 
 /**
  * @brief make basic_storage support signal system
- * 
+ *
  * @tparam T  basic_storage<>
  */
 template <typename T>
@@ -19,30 +19,26 @@ public:
     using sigh_type = sigh<void(entity_type, payload_type& payload)>;
 
     //! @brief get the construction signals
-    auto& on_construct() noexcept {
-        return this->construction_;
-    }
+    auto& on_construct() noexcept { return this->construction_; }
 
     //! @brief get the update signals
-    auto& on_update() noexcept {
-        return this->update_;
-    }
+    auto& on_update() noexcept { return this->update_; }
 
     //! @brief get the destruction signals
-    auto& on_destruction() noexcept {
-        return this->destruction_;
-    }
+    auto& on_destruction() noexcept { return this->destruction_; }
 
     template <typename... Args>
     payload_type& emplace(entity_type entity, Args&&... args) noexcept {
-        auto& payload = underlying_type::emplace(entity, std::forward<Args>(args)...);
+        auto& payload =
+            underlying_type::emplace(entity, std::forward<Args>(args)...);
         construction_.trigger(entity, payload);
         return payload;
     }
 
     template <typename... Args>
     payload_type& replace(entity_type entity, Args&&... args) noexcept {
-        auto& payload = underlying_type::replace(entity, std::forward<Args>(args)...);
+        auto& payload =
+            underlying_type::replace(entity, std::forward<Args>(args)...);
         update_.trigger(entity, payload);
         return payload;
     }
@@ -59,19 +55,16 @@ private:
 };
 
 template <typename EntityT, size_t PageSize>
-class sigh_mixin<basic_storage<EntityT, EntityT, PageSize, void>> final : public basic_storage<EntityT, EntityT, PageSize, void> {
+class sigh_mixin<basic_storage<EntityT, EntityT, PageSize, void>> final
+    : public basic_storage<EntityT, EntityT, PageSize, void> {
 public:
     using underlying_type = basic_storage<EntityT, EntityT, PageSize, void>;
     using entity_type = typename underlying_type::entity_type;
     using sigh_type = sigh<void(entity_type)>;
 
-    auto& on_construct() noexcept {
-        return this->construction_;
-    }
+    auto& on_construct() noexcept { return this->construction_; }
 
-    auto& on_destruction() noexcept {
-        return this->destruction_;
-    }
+    auto& on_destruction() noexcept { return this->destruction_; }
 
     entity_type emplace() noexcept {
         entity_type entity = underlying_type::emplace();
@@ -89,4 +82,4 @@ private:
     sigh_type destruction_;
 };
 
-}
+}  // namespace gecs

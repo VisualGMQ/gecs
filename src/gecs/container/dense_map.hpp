@@ -3,9 +3,9 @@
 #include "compress_pair.hpp"
 #include "core/utility.hpp"
 
-#include <vector>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace gecs {
 
@@ -23,8 +23,14 @@ public:
     using value_type = typename container_type::value_type;
     using iterator_category = std::random_access_iterator_tag;
 
-    constexpr dense_map_iterator(const Container& container, difference_type offset) noexcept : container_(&container), offset_(offset) {}
-    constexpr dense_map_iterator(const Container& container, container_type::const_iterator it) noexcept : container_(&container), offset_(std::distance(container.begin(), it)) {}
+    constexpr dense_map_iterator(const Container& container,
+                                 difference_type offset) noexcept
+        : container_(&container), offset_(offset) {}
+
+    constexpr dense_map_iterator(const Container& container,
+                                 container_type::const_iterator it) noexcept
+        : container_(&container),
+          offset_(std::distance(container.begin(), it)) {}
 
     constexpr reference operator*() noexcept {
         return *(container_->begin() + index());
@@ -34,9 +40,7 @@ public:
         return std::as_const(*this).operator*();
     }
 
-    constexpr const pointer operator->() const noexcept {
-        return &operator*();
-    }
+    constexpr const pointer operator->() const noexcept { return &operator*(); }
 
     constexpr pointer operator->() noexcept {
         return const_cast<pointer>(std::as_const(*this).operator->());
@@ -72,19 +76,15 @@ public:
         return ++(*this), copy;
     }
 
-    constexpr auto& operator++() noexcept {
-        return --offset_, *this;
-    }
+    constexpr auto& operator++() noexcept { return --offset_, *this; }
 
     constexpr auto operator--(int) noexcept {
         sparse_set_iterator copy = *this;
         return --(*this), copy;
     }
 
-    constexpr auto& operator--() noexcept {
-        return ++offset_, *this;
-    }
-    
+    constexpr auto& operator--() noexcept { return ++offset_, *this; }
+
     constexpr bool operator==(const dense_map_iterator& o) const noexcept {
         return o.container_ == container_ && o.offset_ == offset_;
     }
@@ -101,20 +101,19 @@ private:
     const Container* container_;
     Container::difference_type offset_;
 
-    inline size_t index() const {
-        return offset_ - 1;
-    }
+    inline size_t index() const { return offset_ - 1; }
 };
 
-}
+}  // namespace internal
 
 template <typename Key, typename Value, typename Hasher>
 class dense_map final {
 public:
-    using element_type = std::pair<Key, Value>
-    using sparse_container_type = std::vector<size_t>;
+    using element_type = std::pair<Key, Value> using sparse_container_type =
+        std::vector<size_t>;
     using packed_container_type = std::vector<element_type>;
-    using iterator = internal::dense_map_iterator<dense_map<Key, Value, Hasher>>;
+    using iterator =
+        internal::dense_map_iterator<dense_map<Key, Value, Hasher>>;
     using const_iterator = iterator;
 
     dense_map(size_t init_hash_size = 8) {
@@ -127,7 +126,8 @@ public:
         if (!is_null(sparse_[index])) {
             return;
         } else {
-            packed_.First().emplace_back(std::make_pair<Key, Value>(std::forward<Key>(key), std::forward<Value>(value)));
+            packed_.First().emplace_back(std::make_pair<Key, Value>(
+                std::forward<Key>(key), std::forward<Value>(value)));
             sparse_[index] = packed_.size() - 1;
         }
     }
@@ -135,33 +135,22 @@ public:
     template <typename T, typename U>
     void insert_or_replace(T&& key, U&& value) {
         size_t index = this->index(key);
-        packed_.First().emplace_back(std::make_pair<Key, Value>(std::forward<Key>(key), std::forward<Value>(value)));
+        packed_.First().emplace_back(std::make_pair<Key, Value>(
+            std::forward<Key>(key), std::forward<Value>(value)));
         sparse_[index] = packed_.size() - 1;
     }
 
-    iterator begin() {
-        return iterator{&packed_, packed_.size()};
-    }
+    iterator begin() { return iterator{&packed_, packed_.size()}; }
 
-    cosnt_iterator begin() const {
-        return std::as_const(*this).begin();
-    }
+    cosnt_iterator begin() const { return std::as_const(*this).begin(); }
 
-    iterator end() {
-        return iterator{&packed_, 0};
-    }
+    iterator end() { return iterator{&packed_, 0}; }
 
-    const_iterator end() const {
-        return std::as_const(*this).end();
-    }
+    const_iterator end() const { return std::as_const(*this).end(); }
 
-    const_iterator cend() const {
-        return end();
-    }
+    const_iterator cend() const { return end(); }
 
-    const_iterator cbegin() const {
-        return begin();
-    }
+    const_iterator cbegin() const { return begin(); }
 
     const_iterator find(const Key& key) const {
         size_t index = this->index(key);
@@ -181,29 +170,17 @@ public:
         index = null_sparse_element;
     }
 
-    auto rbegin() const {
-        return std::make_reverse_iterator(end());
-    }
+    auto rbegin() const { return std::make_reverse_iterator(end()); }
 
-    auto rend() const {
-        return std::make_reverse_iterator(begin());
-    }
+    auto rend() const { return std::make_reverse_iterator(begin()); }
 
-    auto crbegin() const {
-        return rbegin();
-    }
+    auto crbegin() const { return rbegin(); }
 
-    auto crend() const {
-        return rend();
-    }
+    auto crend() const { return rend(); }
 
-    auto size() const {
-        return packed_.size();
-    }
+    auto size() const { return packed_.size(); }
 
-    auto capacity() const {
-        return packed_.capacity();
-    }
+    auto capacity() const { return packed_.capacity(); }
 
     auto shrink_to_fit() {
         packed_.shrink_to_fit();
@@ -215,24 +192,21 @@ public:
         sparse_.clear();
     }
 
-    bool empty() const {
-        return packed_.empty();
-    }
+    bool empty() const { return packed_.empty(); }
 
 private:
     CompressPair<packed_container_type, Hasher> packed_;
     sparse_container_type sparse_;
     float threshold_ = 0.85;
 
-    static constexpr auto null_sparse_element = std::numeric_limits<sparse_container_type::value_type>::max();
+    static constexpr auto null_sparse_element =
+        std::numeric_limits<sparse_container_type::value_type>::max();
 
-    inline bool is_null(size_t elem) {
-        return elem == null_sparse_element;
-    }
+    inline bool is_null(size_t elem) { return elem == null_sparse_element; }
 
     inline size_t index(const Key& key) {
         return quick_mod<size_t>(Hasher{}(key), sparse_.size());
     }
 };
 
-}
+}  // namespace gecs

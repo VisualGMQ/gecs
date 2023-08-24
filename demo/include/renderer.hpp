@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.hpp"
-#include "window.hpp"
 #include "texture.hpp"
+#include "window.hpp"
 
 class Renderer final {
 public:
@@ -16,8 +16,10 @@ public:
     void FillRect(const Rect& rect);
     void DrawLine(const Vector2& p1, const Vector2& p2);
     void DrawTexture(Texture& texture, const Rect&, int x, int y);
-    void DrawImage(const Image& image, const Vector2& position, const std::optional<Vector2>& size);
-    void DrawImage(const Image& image, const Vector2& position, const Vector2& scale, float rotation = 0);
+    void DrawImage(const Image& image, const Vector2& position,
+                   const std::optional<Vector2>& size);
+    void DrawImage(const Image& image, const Vector2& position,
+                   const Vector2& scale, float rotation = 0);
     void SetScale(const Vector2& scale);
 
 private:

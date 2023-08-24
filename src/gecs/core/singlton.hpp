@@ -9,10 +9,10 @@ class singlton;
 
 /**
  * @brief abstract singlton class for convienient implement Singlton Pattern
- * 
+ *
  * this singlton will init singlton automatically when call instance();
- * 
- * @tparam T 
+ *
+ * @tparam T
  * @tparam Loader a function object to point out how to create the singlton
  */
 template <typename T, typename Loader>
@@ -29,9 +29,10 @@ public:
 /**
  * @brief abstract singlton class for convienient implement Singlton Pattern
  *
- * this singlton must call init() to create instance before use instance(), and release singlton call destroy() after use
- * 
- * @tparam T 
+ * this singlton must call init() to create instance before use instance(), and
+ * release singlton call destroy() after use
+ *
+ * @tparam T
  * @tparam Loader a function object to point out how to create the singlton
  */
 
@@ -41,7 +42,9 @@ public:
     virtual ~singlton() = default;
 
     static T& instance() {
-        ECS_ASSERT("instance not init, you must call T::init() before get this singlton", instance_);
+        ECS_ASSERT("instance not init, you must call T::init() before get this "
+                   "singlton",
+                   instance_);
         return *instance;
     }
 
@@ -50,12 +53,10 @@ public:
         instance_ = std::make_unique<T>(Loader{}(std::forward<Args>(args)...));
     }
 
-    static void destroy() {
-        instance_.reset();
-    }
+    static void destroy() { instance_.reset(); }
 
 private:
     inline static std::unique_ptr<T> instance_;
 };
 
-}
+}  // namespace gecs

@@ -2,9 +2,8 @@
 
 #include "gecs/entity/entity.hpp"
 
-#include <cstdint>
 #include <cstddef>
-
+#include <cstdint>
 
 #ifndef ENTITY_NUMERIC_TYPE
 #define ENTITY_NUMERIC_TYPE uint32_t
@@ -18,7 +17,7 @@ namespace gecs {
 
 namespace config {
 
-enum class Entity: ENTITY_NUMERIC_TYPE {};
+enum class Entity : ENTITY_NUMERIC_TYPE {};
 constexpr uint32_t PageSize = SPARSE_PAGE_SIZE;
 
 inline bool operator==(Entity e1, Entity e2) {
@@ -47,6 +46,6 @@ inline bool operator!=(uint64_t num, Entity e) {
 
 using id_type = size_t;
 
-}
+}  // namespace config
 
-}
+}  // namespace gecs

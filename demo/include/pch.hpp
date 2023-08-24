@@ -1,14 +1,14 @@
 #pragma once
 
 #include "SDL.h"
-#include "vmath.hpp"
 #include "gecs/gecs.hpp"
+#include "vmath.hpp"
 
-#include <string>
-#include <memory>
-#include <unordered_map>
-#include <random>
-#include <iostream>
-#include <optional>
 #include <array>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <random>
+#include <string>
 #include <string_view>
+#include <unordered_map>

@@ -3,14 +3,14 @@
 #include "entity.hpp"
 #include "gecs/core/utility.hpp"
 
-#include <tuple>
 #include <array>
-#include <vector>
-#include <type_traits>
 #include <cassert>
-#include <memory>
 #include <limits>
+#include <memory>
+#include <tuple>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace gecs {
 
@@ -26,40 +26,45 @@ public:
     using value_type = typename container_type::value_type;
     using iterator_category = std::random_access_iterator_tag;
 
-    constexpr sparse_set_iterator(): container_(nullptr), offset_(0u) {}
-    constexpr sparse_set_iterator(const container_type* container): container_(container), offset_(0u) {}
-    constexpr sparse_set_iterator(const container_type* container, difference_type offset) : container_(container), offset_(offset) {}
+    constexpr sparse_set_iterator() : container_(nullptr), offset_(0u) {}
+
+    constexpr sparse_set_iterator(const container_type* container)
+        : container_(container), offset_(0u) {}
+
+    constexpr sparse_set_iterator(const container_type* container,
+                                  difference_type offset)
+        : container_(container), offset_(offset) {}
 
     constexpr pointer operator->() const noexcept {
         return container_->data() + index();
     }
 
-    constexpr reference operator*() const noexcept {
-        return *operator->();
-    }
+    constexpr reference operator*() const noexcept { return *operator->(); }
 
-    constexpr difference_type index() const noexcept {
-        return offset_ - 1;
-    }
+    constexpr difference_type index() const noexcept { return offset_ - 1; }
 
     constexpr pointer data() const noexcept {
         return container_ ? container_->data() : nullptr;
     }
 
-    constexpr sparse_set_iterator& operator+=(const difference_type step) noexcept {
+    constexpr sparse_set_iterator& operator+=(
+        const difference_type step) noexcept {
         return offset_ -= step, *this;
     }
 
-    constexpr sparse_set_iterator& operator-=(const difference_type step) noexcept {
+    constexpr sparse_set_iterator& operator-=(
+        const difference_type step) noexcept {
         return operator+=(-step);
     }
 
-    constexpr sparse_set_iterator operator+(const difference_type step) const noexcept {
+    constexpr sparse_set_iterator operator+(
+        const difference_type step) const noexcept {
         sparse_set_iterator copy = *this;
         return copy += step;
     }
 
-    constexpr sparse_set_iterator operator-(const difference_type step) const noexcept {
+    constexpr sparse_set_iterator operator-(
+        const difference_type step) const noexcept {
         return operator+(-step);
     }
 
@@ -98,7 +103,7 @@ private:
     difference_type offset_;
 };
 
-}
+}  // namespace internal
 
 /**
  * @brief sparse set for storing entity
@@ -109,25 +114,31 @@ template <typename EntityT, size_t PageSize>
 class basic_sparse_set {
 public:
     using type = basic_sparse_set;
-    using entity_numeric_type = typename internal::entity_traits<EntityT>::entity_type;
+    using entity_numeric_type =
+        typename internal::entity_traits<EntityT>::entity_type;
     using entity_type = EntityT;
     using packed_container_type = std::vector<entity_numeric_type>;
     using page_type = std::array<size_t, PageSize>;
     using sparse_container_type = std::vector<page_type>;
     using size_type = typename packed_container_type::size_type;
-    static constexpr typename page_type::value_type null_sparse_data = std::numeric_limits<typename page_type::value_type>::max();
-    using iterator = internal::sparse_set_iterator<basic_sparse_set<EntityT, PageSize>>;
+    static constexpr typename page_type::value_type null_sparse_data =
+        std::numeric_limits<typename page_type::value_type>::max();
+    using iterator =
+        internal::sparse_set_iterator<basic_sparse_set<EntityT, PageSize>>;
     using const_iterator = iterator;
 
     //! @brief insert an entity
     entity_type insert(entity_type entity) noexcept {
         using traits = internal::entity_traits<entity_type>;
-        ECS_ASSERT("invalid entity id", traits::entity_mask != internal::entity_id(entity));
+        ECS_ASSERT("invalid entity id",
+                   traits::entity_mask != internal::entity_id(entity));
 
         auto id = internal::entity_id(entity);
         packed_.push_back(internal::entity_to_integral(entity));
         assure(page(id))[offset(id)] = packed_.size() - 1u;
-        return internal::construct_entity<entity_type>(0, static_cast<typename traits::entity_mask_type>(packed_.size() - 1u));
+        return internal::construct_entity<entity_type>(
+            0, static_cast<typename traits::entity_mask_type>(packed_.size() -
+                                                              1u));
     }
 
     //! @brief remove an entity
@@ -161,7 +172,8 @@ public:
     size_t index(entity_type entity) const noexcept {
         auto id = internal::entity_id(entity);
         auto page = this->page(id);
-        ECS_ASSERT("entity must exists in sparse set when call index", page < sparse_.size());
+        ECS_ASSERT("entity must exists in sparse set when call index",
+                   page < sparse_.size());
         return sparse_[page][offset(id)];
     }
 
@@ -173,12 +185,17 @@ public:
             return false;
         } else {
             auto pos = sparse_[page][offset(id)];
-            return pos != null_sparse_data && packed_[pos] != null_entity && packed_[pos] == entity;
+            return pos != null_sparse_data && packed_[pos] != null_entity &&
+                   packed_[pos] == entity;
         }
     }
 
     const_iterator begin() const noexcept {
-        return internal::sparse_set_iterator<type>{&packed_, static_cast<typename internal::sparse_set_iterator<type>::difference_type>(packed_.size())};
+        return internal::sparse_set_iterator<type>{
+            &packed_,
+            static_cast<
+                typename internal::sparse_set_iterator<type>::difference_type>(
+                packed_.size())};
     }
 
     const_iterator end() const noexcept {
@@ -193,37 +210,21 @@ public:
         return const_cast<iterator&&>(std::as_const(*this).end());
     }
 
-    const_iterator cend() const noexcept {
-        return end();
-    }
+    const_iterator cend() const noexcept { return end(); }
 
-    const_iterator cbegin() const noexcept {
-        return begin();
-    }
+    const_iterator cbegin() const noexcept { return begin(); }
 
-    auto rbegin() const noexcept {
-        return std::make_reverse_iterator(end());
-    }
+    auto rbegin() const noexcept { return std::make_reverse_iterator(end()); }
 
-    auto rend() const noexcept {
-        return std::make_reverse_iterator(begin());
-    }
+    auto rend() const noexcept { return std::make_reverse_iterator(begin()); }
 
-    auto crbegin() const noexcept {
-        return rbegin();
-    }
+    auto crbegin() const noexcept { return rbegin(); }
 
-    auto crend() const noexcept {
-        return rend();
-    }
+    auto crend() const noexcept { return rend(); }
 
-    auto size() const noexcept {
-        return packed_.size();
-    }
+    auto size() const noexcept { return packed_.size(); }
 
-    auto capacity() const noexcept {
-        return packed_.capacity();
-    }
+    auto capacity() const noexcept { return packed_.capacity(); }
 
     auto shrink_to_fit() noexcept {
         packed_.shrink_to_fit();
@@ -235,40 +236,30 @@ public:
         sparse_.clear();
     }
 
-    bool empty() const noexcept {
-        return packed_.empty();
-    }
+    bool empty() const noexcept { return packed_.empty(); }
 
-    void reserve(size_type size) noexcept {
-        packed_.reserve(size);
-    }
+    void reserve(size_type size) noexcept { packed_.reserve(size); }
 
-    const entity_type& back() const noexcept {
-        return packed_.back();
-    }
+    const entity_type& back() const noexcept { return packed_.back(); }
 
-    auto data() const noexcept {
-        return packed_.data();
-    }
+    auto data() const noexcept { return packed_.data(); }
 
-    auto data() noexcept {
-        return std::as_const(*this).data();
-    }
+    auto data() noexcept { return std::as_const(*this).data(); }
 
     entity_type& back() noexcept {
         return const_cast<entity_type&>(std::as_const(*this).back());
     }
 
-    internal::sparse_set_iterator<basic_sparse_set> find(entity_type entity) noexcept {
+    internal::sparse_set_iterator<basic_sparse_set> find(
+        entity_type entity) noexcept {
         return {this, index(entity)};
     }
 
-    const packed_container_type& packed() const noexcept {
-        return packed_;
-    }
+    const packed_container_type& packed() const noexcept { return packed_; }
 
     packed_container_type& packed() noexcept {
-        return const_cast<packed_container_type&>(std::as_const(*this).packed());
+        return const_cast<packed_container_type&>(
+            std::as_const(*this).packed());
     }
 
     virtual ~basic_sparse_set() = default;
@@ -277,14 +268,12 @@ private:
     packed_container_type packed_;
     sparse_container_type sparse_;
 
-    size_t page(entity_numeric_type id) const noexcept {
-        return id / PageSize;
-    }
+    size_t page(entity_numeric_type id) const noexcept { return id / PageSize; }
 
     size_t offset(entity_numeric_type id) const noexcept {
         return id % PageSize;
     }
-    
+
     const size_t* sparse_ptr(entity_numeric_type id) const noexcept {
         auto page = this->page(id);
         return page < sparse_.size() ? &sparse_[page][offset(id)] : nullptr;
@@ -307,11 +296,12 @@ private:
             auto old_size = sparse_.size();
             sparse_.resize(page + 1u);
             for (size_type i = old_size; i < sparse_.size(); i++) {
-                std::uninitialized_fill(std::begin(sparse_[i]), std::end(sparse_[i]), null_sparse_data);
+                std::uninitialized_fill(std::begin(sparse_[i]),
+                                        std::end(sparse_[i]), null_sparse_data);
             }
         }
         return sparse_[page];
     }
 };
 
-}
+}  // namespace gecs

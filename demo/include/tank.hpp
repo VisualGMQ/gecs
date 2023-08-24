@@ -1,6 +1,3 @@
 #pragma once
 
-class Tank final {
-public:
-private:
-};
+struct Tank final { };

@@ -1,17 +1,16 @@
 #pragma once
 
-#include "gecs/core/utility.hpp"
-#include "querier.hpp"
 #include "commands.hpp"
 #include "event_dispatcher.hpp"
+#include "gecs/core/utility.hpp"
+#include "querier.hpp"
 #include "resource.hpp"
 
-namespace gecs{
+namespace gecs {
 
 // fwd declare
 template <typename T, typename WorldT>
 class basic_event_dispatcher;
-
 
 namespace internal {
 
@@ -46,12 +45,12 @@ struct is_resource {
     static constexpr bool value = false;
 };
 
-template<typename T>
+template <typename T>
 struct is_resource<resource<T>> {
     static constexpr bool value = true;
 };
 
-template<typename T>
+template <typename T>
 constexpr bool is_resource_v = is_resource<T>::value;
 
 template <typename T>
@@ -67,12 +66,12 @@ struct is_event_dispatcher<basic_event_dispatcher<T, WorldT>> {
 template <typename T>
 constexpr bool is_event_dispatcher_v = is_event_dispatcher<T>::value;
 
-
 template <typename WorldT, typename Querier>
 struct querier_construct_helper;
 
 template <typename EntityT, size_t PageSize, typename WorldT, typename... Ts>
-struct querier_construct_helper<WorldT, basic_querier<EntityT, PageSize, WorldT, Ts...>> {
+struct querier_construct_helper<
+    WorldT, basic_querier<EntityT, PageSize, WorldT, Ts...>> {
     using querier_type = basic_querier<EntityT, PageSize, WorldT, Ts...>;
 
     querier_type operator()(WorldT& world) const {
@@ -136,32 +135,44 @@ struct system_traits<void(Ts...)> {
 template <typename WorldT, typename... Ts>
 class system_constructor final {
 public:
-    using function_type = void(*)(Ts..., WorldT&);
+    using function_type = void (*)(Ts..., WorldT&);
 
     template <auto Func>
     static constexpr function_type value = [](Ts... params, WorldT& world) {
-            using arg_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(Func)>>>::types;
-            system_constructor<WorldT, Ts...>::invoke_arbitary_param_system<Func, arg_list>(std::forward<Ts>(params)..., world, make_index_range<sizeof...(Ts), arg_list::size>{});
-        };
+        using arg_list =
+            typename system_traits<strip_function_pointer_to_type_t<
+                std::decay_t<decltype(Func)>>>::types;
+        system_constructor<WorldT, Ts...>::invoke_arbitary_param_system<
+            Func, arg_list>(std::forward<Ts>(params)..., world,
+                            make_index_range<sizeof...(Ts), arg_list::size>{});
+    };
 
     template <auto Func>
     static constexpr function_type construct() {
         return [](Ts... params, WorldT& world) {
-            using type_list = typename system_traits<strip_function_pointer_to_type_t<std::decay_t<decltype(Func)>>>::types;
-            invoke_arbitary_param_system<Func, type_list>(std::forward<Ts>(params)..., world, make_index_range<sizeof...(Ts), type_list::size>{});
+            using type_list =
+                typename system_traits<strip_function_pointer_to_type_t<
+                    std::decay_t<decltype(Func)>>>::types;
+            invoke_arbitary_param_system<Func, type_list>(
+                std::forward<Ts>(params)..., world,
+                make_index_range<sizeof...(Ts), type_list::size>{});
         };
     }
 
+private:
     template <auto Func, typename List, size_t... Idx>
-    static constexpr void invoke_arbitary_param_system(Ts... params, WorldT& world, std::index_sequence<Idx...>) {
-        std::invoke(Func, std::forward<Ts>(params)..., internal::template construct<WorldT, type_list_element_t<Idx, List>>(world)...);
+    static constexpr void invoke_arbitary_param_system(
+        Ts... params, WorldT& world, std::index_sequence<Idx...>) {
+        std::invoke(Func, std::forward<Ts>(params)...,
+                    internal::template construct<
+                        WorldT, type_list_element_t<Idx, List>>(world)...);
     }
 };
 
 template <auto Func, typename WorldT, typename... Ts>
-constexpr auto system_constructor_v = system_constructor<WorldT, Ts...>::value<Func>;
+constexpr auto system_constructor_v =
+    system_constructor<WorldT, Ts...>::value<Func>;
 
+}  // namespace internal
 
-}
-
-}
+}  // namespace gecs

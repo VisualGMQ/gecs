@@ -8,9 +8,9 @@ namespace gecs {
 
 /**
  * @brief sink
- * 
+ *
  * a help class to insert/remove delegate from sigh
- * 
+ *
  * @tparam SighT sign<>
  */
 template <typename SighT>
@@ -21,7 +21,7 @@ public:
     using delegate_pointer_type = typename delegate_type::delegate_pointer_type;
     using fn_pointer_type = typename delegate_type::fn_pointer_type;
 
-    sink(sigh_type& sigh) noexcept: sigh_(&sigh) {}
+    sink(sigh_type& sigh) noexcept : sigh_(&sigh) {}
 
     template <auto Func>
     void add() noexcept {
@@ -30,9 +30,7 @@ public:
         sigh_->delegates_.emplace_back(std::move(d));
     }
 
-    void add(delegate_type d) noexcept {
-        sigh_->delegates_.emplace_back(d);
-    }
+    void add(delegate_type d) noexcept { sigh_->delegates_.emplace_back(d); }
 
     void add(delegate_pointer_type d) noexcept {
         delegate_type delegate;
@@ -94,27 +92,25 @@ public:
         auto& delegates = sigh_->delegates_;
         delegate_type delegate;
         delegate.template connect<Func>();
-        auto it = std::remove_if(delegates.begin(), delegates.end(), [&delegate](auto& dlg) {
-            return dlg == delegate;
-        });
+        auto it =
+            std::remove_if(delegates.begin(), delegates.end(),
+                           [&delegate](auto& dlg) { return dlg == delegate; });
         delegates.erase(it, delegates.end());
     }
 
     template <typename Payload>
     void remove(const Payload& payload) noexcept {
         auto& delegates = sigh_->delegates_;
-        auto it = std::remove_if(delegates.begin(), delegates.end(), [&payload](auto& dlg) {
-            return dlg.payload() == &payload;
-        });
+        auto it = std::remove_if(
+            delegates.begin(), delegates.end(),
+            [&payload](auto& dlg) { return dlg.payload() == &payload; });
         delegates.erase(it, delegates.end());
     }
 
-    void clear() noexcept {
-        sigh_->delegates_.clear();
-    }
+    void clear() noexcept { sigh_->delegates_.clear(); }
 
 private:
-    sigh_type* sigh_; 
+    sigh_type* sigh_;
 };
 
-}
+}  // namespace gecs

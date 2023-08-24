@@ -14,11 +14,12 @@ class sigh;
 
 /**
  * @brief signal handler
- * 
- * a signal handler to simulate C# delegate. But trigger all delegates in insert order
- * 
- * @tparam Ret 
- * @tparam Args 
+ *
+ * a signal handler to simulate C# delegate. But trigger all delegates in insert
+ * order
+ *
+ * @tparam Ret
+ * @tparam Args
  */
 template <typename Ret, typename... Args>
 class sigh<Ret(Args...)> final {
@@ -30,13 +31,9 @@ public:
 
     friend class sink<self_type>;
 
-    size_type size() const noexcept {
-        return delegates_.size();
-    }
+    size_type size() const noexcept { return delegates_.size(); }
 
-    bool empty() const noexcept {
-        return delegates_.empty();
-    }
+    bool empty() const noexcept { return delegates_.empty(); }
 
     //! @brief call all delegates with arguments
     void trigger(Args... args) noexcept {
@@ -55,12 +52,10 @@ public:
         return *this;
     }
 
-    void clear() noexcept {
-        delegates_.clear();
-    }
+    void clear() noexcept { delegates_.clear(); }
 
 private:
     container_type delegates_;
 };
 
-}
+}  // namespace gecs

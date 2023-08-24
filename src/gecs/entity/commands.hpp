@@ -6,33 +6,35 @@
 namespace gecs {
 
 /**
- * @brief a help class for create/delete/replace entity/resource/component from basic_world
- * 
- * @tparam WorldT 
+ * @brief a help class for create/delete/replace entity/resource/component from
+ * basic_world
+ *
+ * @tparam WorldT
  */
 template <typename WorldT>
 class basic_commands final {
 public:
-    using entity_type = typename WorldT::entity_type; 
+    using entity_type = typename WorldT::entity_type;
 
-    basic_commands(WorldT& world): world_(&world) {}
+    basic_commands(WorldT& world) : world_(&world) {}
 
-    entity_type create() noexcept {
-        return world_->create();
-    }
+    entity_type create() noexcept { return world_->create(); }
 
     template <typename Type, typename... Args>
     Type& emplace(entity_type entity, Args&&... args) noexcept {
-        return world_->template emplace<Type>(entity, std::forward<Args>(args)...);
+        return world_->template emplace<Type>(entity,
+                                              std::forward<Args>(args)...);
     }
 
     template <typename Type, typename... Args>
     Type& replace(entity_type entity, Args&&... args) noexcept {
-        return world_->template replace<Type>(entity, std::forward<Args>(args)...);
+        return world_->template replace<Type>(entity,
+                                              std::forward<Args>(args)...);
     }
 
-    void destroy(entity_type entity) noexcept {
+    auto& destroy(entity_type entity) noexcept {
         world_->destroy(entity);
+        return *this;
     }
 
     template <typename Type>
@@ -46,12 +48,20 @@ public:
 
     template <typename T, typename... Args>
     T& emplace_resource(Args&&... args) noexcept {
-        return internal::resource_cache<T>::instance().emplace(std::forward<Args>(args)...);
+        return internal::resource_cache<T>::instance().emplace(
+            std::forward<Args>(args)...);
     }
 
     template <typename T>
-    void remove_resource() noexcept {
+    auto& remove_resource() noexcept {
         internal::resource_cache<T>::instance().remove();
+        return *this;
+    }
+
+    template <typename T>
+    auto& switch_state(T state) {
+        world_->template switch_state<T>(state);
+        return *this;
     }
 
     template <typename T>
@@ -73,4 +83,4 @@ private:
     WorldT* world_;
 };
 
-}
+}  // namespace gecs

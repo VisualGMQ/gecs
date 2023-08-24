@@ -13,9 +13,7 @@ public:
     using size_type = typename sigh_type::size_type;
     using event_type = T;
 
-    auto sink() noexcept {
-        return ::gecs::sink{sigh_};
-    }
+    auto sink() noexcept { return ::gecs::sink{sigh_}; }
 
     //! @brief trigger all delegates immediately
     void trigger(const T& event, Args... args) noexcept {
@@ -36,21 +34,13 @@ public:
         cache_.emplace_back(std::forward<Ts>(args)...);
     }
 
-    void clear() noexcept {
-        sigh_.clear();
-    }
+    void clear() noexcept { sigh_.clear(); }
 
-    void clear_cache() noexcept {
-        cache_.clear();
-    }
+    void clear_cache() noexcept { cache_.clear(); }
 
-    size_type size() const noexcept {
-        return sigh_.size();
-    }
+    size_type size() const noexcept { return sigh_.size(); }
 
-    bool empty() const noexcept {
-        return sigh_.empty();
-    }
+    bool empty() const noexcept { return sigh_.empty(); }
 
     virtual ~dispatcher() = default;
 
@@ -59,4 +49,4 @@ private:
     cache_container cache_;
 };
 
-}
+}  // namespace gecs

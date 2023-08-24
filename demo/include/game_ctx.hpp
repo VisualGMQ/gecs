@@ -1,8 +1,8 @@
 #pragma once
 
-#include "window.hpp"
 #include "renderer.hpp"
 #include "ticker.hpp"
+#include "window.hpp"
 
 struct BulletCreator final {
     gecs::entity operator()(gecs::commands cmds) const {
@@ -18,5 +18,6 @@ struct GameContext final {
     SDL_Event event;
     bool debugMode = false;
 
-    static GameContext Create(const std::string& title, int w, int h, int falling_elapse);
+    static GameContext Create(const std::string& title, int w, int h,
+                              int falling_elapse);
 };
