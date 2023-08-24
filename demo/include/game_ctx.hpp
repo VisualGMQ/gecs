@@ -17,6 +17,7 @@ struct GameContext final {
     Ticker stone_falling_ticker;
     SDL_Event event;
     bool debugMode = false;
+    uint32_t score = 0;
 
     static GameContext Create(const std::string& title, int w, int h,
                               int falling_elapse);

@@ -3,6 +3,7 @@
 #include "gaming_systems.hpp"
 #include "common_systems.hpp"
 #include "welcome_systems.hpp"
+#include "restart_systems.hpp"
 
 // startup system to init SDL and resources
 void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit,
@@ -31,8 +32,10 @@ void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit,
     keyboard.sink().add<f2>();
 
     auto& ts_mgr = cmds.emplace_resource<TextureManager>(ctx.renderer.get());
+    ts_mgr.Load("how_to_start", "demo/resources/how_to_start.bmp", KeyColor);
     ts_mgr.Load("how_to_play", "demo/resources/how-to-play.bmp", KeyColor);
     ts_mgr.Load("land", "demo/resources/land.bmp", KeyColor);
+    ts_mgr.Load("gameover", "demo/resources/gameover.bmp", KeyColor);
     auto& tank_ts =
         ts_mgr.LoadTilesheet("tank", "demo/resources/tank.bmp", KeyColor, 2, 1);
     auto& shell_ts = ts_mgr.LoadTilesheet("shell", "demo/resources/shell.bmp",
@@ -41,6 +44,7 @@ void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit,
         "falling_stone", "demo/resources/falling_stone.bmp", KeyColor, 2, 1);
     auto& bomb_ts =
         ts_mgr.LoadTilesheet("bomb", "demo/resources/bomb.bmp", KeyColor, 6, 1);
+    ts_mgr.LoadTilesheet("numbers", "demo/resources/numbers.bmp", KeyColor, 10, 1);
     anim_mgr
         .Create("shell_fly",
                 {Frame(shell_ts.Get(0, 0), 3), Frame(shell_ts.Get(1, 0), 3)})
@@ -132,6 +136,13 @@ int main(int argc, char** argv) {
             GameState::Gaming)
         .regist_update_system_to_state<CollideHandle<FallingStone, Land>>(
             GameState::Gaming)
+        .regist_update_system_to_state<UpdateScoreImage>(GameState::Gaming)
+        .regist_exit_system_to_state<OnExitGaming>(GameState::Gaming)
+        // restart state
+        .add_state(GameState::Restart)
+        .regist_enter_system_to_state<OnEnterRestart>(GameState::Restart)
+        .regist_exit_system_to_state<OnExitRestart>(GameState::Restart)
+        // start state
         .start_with_state(GameState::Welcome);
 
     // startup ecs

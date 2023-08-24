@@ -4,6 +4,8 @@
 
 ## 使用方法
 
+`demo`下有一个完整的例子
+
 ### 基本例子
 
 `gecs`的API大量借鉴了`bevy`游戏引擎，下面是一个简单例子：
@@ -177,3 +179,9 @@ void system(commands cmds) {
     cmds.remove_resource<Res>();
 }
 ```
+
+### Demo
+
+为了测试ECS的稳定性，编写了一个Demo。默认是不编译的，需要SDL2库。请在根目录下运行。
+
+![demo](./snapshot/snapshot.png)

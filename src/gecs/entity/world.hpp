@@ -309,17 +309,13 @@ public:
     }
 
     template <typename T>
-    void switch_state(T state) {
-        if (cur_state_) {
-            for (auto& exit : states_[cur_state_.value()].on_exit) {
-                exit(*this);
-            }
-        }
+    void switch_state_immediatly(T state) {
+        do_switch_state(static_cast<std::underlying_type_t<T>>(state));
+    }
 
-        cur_state_ = static_cast<std::underlying_type_t<T>>(state);
-        for (auto& enter : states_[cur_state_.value()].on_enter) {
-            enter(*this);
-        }
+    template <typename T>
+    void switch_state(T state) {
+        will_change_state_ =  static_cast<std::underlying_type_t<T>>(state);
     }
 
     void startup() noexcept {
@@ -347,6 +343,11 @@ public:
 
         for (auto [key, fn] : auto_dispatch_fns_) {
             fn(*this);
+        }
+
+        if (will_change_state_) {
+            do_switch_state(will_change_state_.value());
+            will_change_state_.reset();
         }
     }
 
@@ -410,6 +411,7 @@ private:
 
     std::unordered_map<uint32_t, State> states_;
     std::optional<uint32_t> cur_state_;
+    std::optional<uint32_t> will_change_state_;
 
     pool_container_type pools_;
     entities_container_type entities_;
@@ -431,6 +433,19 @@ private:
         }
 
         return min_idx;
+    }
+
+    void do_switch_state(uint32_t state) {
+        if (cur_state_) {
+            for (auto& exit : states_[cur_state_.value()].on_exit) {
+                exit(*this);
+            }
+        }
+
+        cur_state_ = state;
+        for (auto& enter : states_[cur_state_.value()].on_enter) {
+            enter(*this);
+        }
     }
 };
 

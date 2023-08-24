@@ -6,6 +6,9 @@
 
 #include <random>
 
+// a class for score
+struct Score { int order; };
+
 void RemoveBullet(gecs::commands cmds, gecs::querier<Bullet, Sprite> querier,
                   gecs::resource<gecs::mut<GameContext>> ctx);
 
@@ -29,13 +32,19 @@ void ShootBullet(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr,
 void PlayAnimByVel(
     gecs::querier<Tank, gecs::mut<Animation>, RigidBody> querier);
 
-void OnEnterGaming(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr, gecs::resource<TextureManager> ts_mgr);
+void OnEnterGaming(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr, gecs::resource<TextureManager> ts_mgr, gecs::resource<gecs::mut<GameContext>> ctx);
+void UpdateScoreImage(gecs::resource<GameContext> ctx,
+                      gecs::querier<Score, gecs::mut<Sprite>> scores,
+                      gecs::resource<TextureManager> ts_mgr);
+
+void OnExitGaming(gecs::commands cmds, gecs::querier<GamingScene> querier);
 
 template <typename T1, typename T2>
 void CollideHandle(gecs::commands cmds,
                    gecs::querier<T1, RigidBody, Sprite> querier1,
                    gecs::querier<T2, RigidBody, Sprite> querier2,
-                   gecs::resource<AnimManager> anim_mgr) {
+                   gecs::resource<AnimManager> anim_mgr,
+                   gecs::resource<gecs::mut<GameContext>> ctx) {
     float min = std::numeric_limits<float>::max();
     std::vector<std::pair<Vector2, gecs::entity>> entities1;
     std::vector<gecs::entity> entities2;
@@ -69,11 +78,19 @@ void CollideHandle(gecs::commands cmds,
         }
     }
 
+    bool is_game_over = false;
+
     for (auto [pos, ent] : entities1) {
         cmds.destroy(ent);
         auto& body = CreateBombAnim(pos, FallingStoneVel, cmds, anim_mgr);
         if constexpr (std::is_same_v<T2, Land>) {
             body.velocity.Set(0, 0);
+        }
+        if constexpr (std::is_same_v<T2, Bullet>) {
+            ctx->score ++;
+        }
+        if constexpr (std::is_same_v<T2, Tank>) {
+            is_game_over = true;
         }
     }
 
@@ -81,5 +98,9 @@ void CollideHandle(gecs::commands cmds,
         for (auto ent : entities2) {
             cmds.destroy(ent);
         }
+    }
+
+    if (is_game_over) {
+        cmds.switch_state(GameState::Restart);
     }
 }

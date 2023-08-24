@@ -1,7 +1,12 @@
 #include "gaming_systems.hpp"
 
-void OnEnterGaming(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr, gecs::resource<TextureManager> ts_mgr) {
+void OnEnterGaming(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr,
+                   gecs::resource<TextureManager> ts_mgr,
+                   gecs::resource<gecs::mut<GameContext>> ctx) {
+    ctx->score = 0;
+
     auto tank_entity = cmds.create();
+    cmds.emplace<GamingScene>(tank_entity);
 
     auto& tank_anim = *anim_mgr->Find("tank_move");
     cmds.emplace<Animation>(tank_entity, tank_anim);
@@ -17,6 +22,7 @@ void OnEnterGaming(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr, ge
     cmds.emplace<Ticker>(tank_entity, 10);
 
     auto land_entity = cmds.create();
+    cmds.emplace<GamingScene>(land_entity);
     cmds.emplace<Sprite>(
         land_entity,
         Image(*ts_mgr->Find("land")),
@@ -27,6 +33,27 @@ void OnEnterGaming(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr, ge
                          Vector2{0, 0},
                          Rect{0, 50, CanvaSize.w, CanvaSize.h}
     });
+
+    auto score_entity1 = cmds.create();
+    auto score_entity2 = cmds.create();
+    cmds.emplace<GamingScene>(score_entity1);
+    cmds.emplace<GamingScene>(score_entity2);
+    uint32_t units = ctx->score % 10;
+    uint32_t tens = ctx->score / 10;
+    if (tens != 0) {
+        cmds.emplace<Sprite>(score_entity1,
+                             ts_mgr->FindTilesheet("numbers")->Get(tens, 0),
+                             Vector2{10, 10}, DepthLayer::UIDepth);
+    } else {
+        cmds.emplace<Sprite>(score_entity1,
+                             Image{},
+                             Vector2{10, 10}, DepthLayer::UIDepth);
+    }
+    cmds.emplace<Score>(score_entity1, Score{0});
+    cmds.emplace<Sprite>(score_entity2,
+                            ts_mgr->FindTilesheet("numbers")->Get(units, 0),
+                            Vector2{28, 10}, DepthLayer::UIDepth);
+    cmds.emplace<Score>(score_entity2, Score{1});
 }
 
 void RemoveBullet(gecs::commands cmds, gecs::querier<Bullet, Sprite> querier,
@@ -109,5 +136,34 @@ void PlayAnimByVel(
         } else {
             anim.Play();
         }
+    }
+}
+
+void UpdateScoreImage(gecs::resource<GameContext> ctx,
+                      gecs::querier<Score, gecs::mut<Sprite>> scores,
+                      gecs::resource<TextureManager> ts_mgr) {
+    scores.sort_by<Score>([](const Score& a, const Score& b){
+        return a.order < b.order;
+    });
+
+    uint32_t units = ctx->score % 10;
+    uint32_t tens = ctx->score / 10;
+    auto it = scores.begin();
+    {
+        auto& [_, score, sprite] = *it;
+        if (tens != 0) {
+            sprite.image = ts_mgr->FindTilesheet("numbers")->Get(tens, 0);
+        }
+    }
+    it ++;
+    {
+        auto& [_, score, sprite] = *it;
+        sprite.image = ts_mgr->FindTilesheet("numbers")->Get(units, 0);
+    }
+}
+
+void OnExitGaming(gecs::commands cmds, gecs::querier<GamingScene> querier) {
+    for (auto& [ent, _] : querier) {
+        cmds.destroy(ent);
     }
 }
