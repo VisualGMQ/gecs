@@ -138,7 +138,7 @@ public:
     //! @warning payload can't exists, otherwise will abort
     template <typename... Args>
     Payload& insert(entity_type entity, Args&&... args) noexcept {
-        ECS_ASSERT("storage already has entity", !base_type::contain(entity));
+        GECS_ASSERT(!base_type::contain(entity), "storage already has entity");
 
         base_type::insert(entity);
         auto idx = base_type::index(entity);
@@ -149,7 +149,7 @@ public:
     //! @warning payload can't exists, otherwise will abort
     template <typename... Args>
     Payload& emplace(entity_type entity, Args&&... args) noexcept {
-        ECS_ASSERT("storage already has entity", !base_type::contain(entity));
+        GECS_ASSERT(!base_type::contain(entity), "storage already has entity");
 
         base_type::insert(entity);
         auto idx = this->index(entity);
@@ -160,7 +160,7 @@ public:
 
     //! @brief remove the entity and it's payload
     void remove(entity_type entity) noexcept override {
-        ECS_ASSERT("entity not exists", base_type::contain(entity));
+        GECS_ASSERT(base_type::contain(entity), "entity not exists");
 
         auto idx = this->index(entity);
         payloads_[idx]->~Payload();
@@ -172,7 +172,7 @@ public:
     //! @warning the entity must exists, otherwise will abort
     template <typename... Args>
     Payload& replace(entity_type entity, Args&&... args) noexcept {
-        ECS_ASSERT("entity not exists", base_type::contain(entity));
+        GECS_ASSERT(base_type::contain(entity), "entity not exists");
 
         base_type::insert(entity);
         auto idx = this->index(entity);

@@ -13,6 +13,8 @@ public:
     using size_type = typename sigh_type::size_type;
     using event_type = T;
 
+    virtual ~dispatcher() = default;
+
     auto sink() noexcept { return ::gecs::sink{sigh_}; }
 
     //! @brief trigger all delegates immediately
@@ -22,9 +24,7 @@ public:
 
     //! @brief trigger all delegates by cached events
     void update(Args... args) noexcept {
-        for (auto& event : cache_) {
-            sigh_.trigger(event, std::forward<Args>(args)...);
-        }
+        trigger_cached(std::forward<Args>(args)...);
         clear_cache();
     }
 
@@ -34,6 +34,12 @@ public:
         cache_.emplace_back(std::forward<Ts>(args)...);
     }
 
+    void trigger_cached(Args... args) noexcept {
+        for (auto& cache : cache_) {
+            trigger(cache, std::forward<Args>(args)...);
+        }
+    }
+
     void clear() noexcept { sigh_.clear(); }
 
     void clear_cache() noexcept { cache_.clear(); }
@@ -41,8 +47,6 @@ public:
     size_type size() const noexcept { return sigh_.size(); }
 
     bool empty() const noexcept { return sigh_.empty(); }
-
-    virtual ~dispatcher() = default;
 
 private:
     sigh_type sigh_;

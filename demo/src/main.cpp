@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 
     // regist all systems
     // startup system
-    gaming_world
+    gaming_world.regist_registry("gaming")
         .regist_startup_system<Startup>()
         // shutdown system
         .regist_shutdown_system<Shutdown>()
@@ -146,10 +146,12 @@ int main(int argc, char** argv) {
         .start_with_state(GameState::Welcome);
 
     // startup ecs
+    gaming_world.start_with("gaming");
     gaming_world.startup();
 
     // use world to access GameContext directly
-    gecs::resource<GameContext> res = gaming_world.res<GameContext>();
+    gecs::resource<GameContext> res =
+        gaming_world.cur_registry()->res<GameContext>();
     while (!res->shouldClose) {
         // update ecs
         gaming_world.update();

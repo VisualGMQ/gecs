@@ -130,8 +130,7 @@ public:
     //! @brief insert an entity
     entity_type insert(entity_type entity) noexcept {
         using traits = internal::entity_traits<entity_type>;
-        ECS_ASSERT("invalid entity id",
-                   traits::entity_mask != internal::entity_id(entity));
+        GECS_ASSERT(traits::entity_mask != internal::entity_id(entity), "invalid entity id");
 
         auto id = internal::entity_id(entity);
         packed_.push_back(internal::entity_to_integral(entity));
@@ -158,7 +157,7 @@ public:
 
     //! @brief pump a entity to the idx and return it
     entity_numeric_type& pump(entity_type src, entity_type dst) noexcept {
-        ECS_ASSERT("sparse set must not empty when pump element", !empty());
+        GECS_ASSERT(!empty(), "sparse set must not empty when pump element");
 
         auto id = internal::entity_id(src);
         auto& ref1 = sparse_ref(id);
@@ -172,8 +171,7 @@ public:
     size_t index(entity_type entity) const noexcept {
         auto id = internal::entity_id(entity);
         auto page = this->page(id);
-        ECS_ASSERT("entity must exists in sparse set when call index",
-                   page < sparse_.size());
+        GECS_ASSERT(page < sparse_.size(), "entity must exists in sparse set when call index");
         return sparse_[page][offset(id)];
     }
 

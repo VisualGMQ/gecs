@@ -8,14 +8,14 @@
 
 namespace gecs {
 
-using world = basic_world<config::Entity, config::PageSize>;
+using world = basic_world<gecs::config::Entity, gecs::config::PageSize>;
 
 template <typename... Ts>
-using querier = typename world::querier_type<Ts...>;
+using querier = typename world::registry_type::querier_type<Ts...>;
 
-using commands = typename world::commands_type;
+using commands = typename world::registry_type::commands_type;
 
 template <typename T>
-using event_dispatcher = typename world::event_dispatcher_type<T>;
+using event_dispatcher = typename world::registry_type::event_dispatcher_wrapper_type<T>;
 
 }  // namespace gecs

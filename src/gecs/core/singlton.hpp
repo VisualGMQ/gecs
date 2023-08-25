@@ -42,9 +42,8 @@ public:
     virtual ~singlton() = default;
 
     static T& instance() {
-        ECS_ASSERT("instance not init, you must call T::init() before get this "
-                   "singlton",
-                   instance_);
+        GECS_ASSERT(instance_, "instance not init, you must call T::init() before get this "
+                   "singlton");
         return *instance;
     }
 

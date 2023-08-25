@@ -123,7 +123,7 @@ private:
                               std::get<Index>(forward_args))...));
             };
         } else {
-            ECS_ASSERT("unsupport bind function, maybe a bug", false);
+            GECS_ASSERT(false, "unsupport bind function, maybe a bug");
             return nullptr;
         }
     }
@@ -147,7 +147,7 @@ private:
                         std::get<Index>(forward_args))...));
             };
         } else {
-            ECS_ASSERT("unsupport bind function, maybe a bug", false);
+            GECS_ASSERT(false, "unsupport bind function, maybe a bug");
             return nullptr;
         }
     }
@@ -171,7 +171,7 @@ private:
                         std::get<Index>(forward_args))...));
             };
         } else {
-            ECS_ASSERT("unsupport bind function, maybe a bug", false);
+            GECS_ASSERT(false, "unsupport bind function, maybe a bug");
             return nullptr;
         }
     }

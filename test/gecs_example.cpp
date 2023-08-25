@@ -46,13 +46,15 @@ TEST_CASE("gecs") {
     delegate<void(entity, Name&)> d;
     d.connect<trigger>();
 
-    world.on_construct<Name>().add(d);
-    world.regist_startup_system<f>();
+    auto& reg = world.regist_registry("reg");
+
+    reg.on_construct<Name>().add(d);
+    reg.regist_startup_system<f>();
 
     // use normal function
-    world.regist_update_system<update_system>();
+    reg.regist_update_system<update_system>();
 
-    world.startup();
-    world.update();
+    reg.startup();
+    reg.update();
 }
 

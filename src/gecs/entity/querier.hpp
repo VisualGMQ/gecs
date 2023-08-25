@@ -147,29 +147,29 @@ using storage_for_with_constness_t =
 
 /**
  * @brief a help class for accessing entity and their components from
- * basic_world
+ * basic_registry
  *
  * @tparam EntityT
  * @tparam PageSize
  * @tparam WorldT
  * @tparam Types
  */
-template <typename EntityT, size_t PageSize, typename WorldT, typename... Types>
+template <typename EntityT, size_t PageSize, typename RegistryT, typename... Types>
 class basic_querier {
 public:
     using query_types = type_list<Types...>;
     using query_raw_types = type_list<internal::remove_mut_t<Types>...>;
     using pool_container =
-        std::tuple<internal::storage_for_with_constness_t<WorldT, Types>*...>;
+        std::tuple<internal::storage_for_with_constness_t<RegistryT, Types>*...>;
     using pool_container_reference = pool_container&;
     using iterator = internal::querier_iterator<
         EntityT,
         std::decay_t<
-            decltype(std::declval<typename WorldT::pool_base_type>().packed())>,
-        internal::storage_for_with_constness_t<WorldT, Types>*...>;
+            decltype(std::declval<typename RegistryT::pool_base_type>().packed())>,
+        internal::storage_for_with_constness_t<RegistryT, Types>*...>;
     using const_iterator = const iterator;
     using entity_container =
-        typename WorldT::pool_base_type::packed_container_type;
+        typename RegistryT::pool_base_type::packed_container_type;
     using entity_type = EntityT;
 
     basic_querier(pool_container pools,

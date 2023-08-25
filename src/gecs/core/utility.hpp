@@ -7,7 +7,9 @@
 
 namespace gecs {
 
-#define ECS_ASSERT(expr, x) assert(((void)expr, x))
+#ifndef GECS_ASSERT
+#define GECS_ASSERT(expr, msg) assert(((void)msg, expr))
+#endif
 
 inline constexpr size_t is_power_of_2(size_t number) {
     return number && ((number - 1) & (number == 0));

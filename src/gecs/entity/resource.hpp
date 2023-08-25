@@ -37,12 +37,12 @@ public:
     void remove() noexcept { data_.reset(); }
 
     type_const_reference get() const noexcept {
-        ECS_ASSERT("resource not exists", data_);
+        GECS_ASSERT(data_,"resource not exists");
         return *data_;
     }
 
     type_reference get() noexcept {
-        ECS_ASSERT("resource not exists", data_);
+        GECS_ASSERT(data_, "resource not exists");
         return const_cast<type_reference>(std::as_const(*this).get());
     }
 
