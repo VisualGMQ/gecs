@@ -6,6 +6,8 @@
 #include "querier.hpp"
 #include "resource.hpp"
 
+#include <functional>
+
 namespace gecs {
 
 // fwd declare

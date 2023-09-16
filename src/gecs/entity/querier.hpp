@@ -5,6 +5,7 @@
 
 #include <tuple>
 #include <utility>
+#include <algorithm>
 
 namespace gecs {
 
