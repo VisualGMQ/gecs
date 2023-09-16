@@ -332,8 +332,8 @@ public:
     }
 
     void startup() noexcept {
-        for (auto sys : startup_systems_) {
-            sys(*this);
+        for (int i = 0; i < startup_systems_.size(); i++) {
+            startup_systems_[i](*this);
         }
 
         if (cur_state_) {
