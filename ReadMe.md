@@ -106,13 +106,15 @@ while (shouldClose()) {
 
 `system`**不是**`std::function`类型，而是普通函数类型。所以若想使用lambda，则不能有任何捕获。
 
-`startup system`有固定的函数类型`void (*)(commands)`，使用`regist_startup_system`即可注册：
+`system`没有固定的函数声明，但只能包含零个或多个`querier`/`resource`/`commands`。参数顺序没有要求。
+
+`startup system`使用`regist_startup_system`即可注册：
 
 ```cpp
 world.regist_startup_system<your_startup_system>();
 ```
 
-`update system`没有固定函数类型，但只能包含零个或多个`querier`/`resource`，以及零个或一个`commands`。参数顺序没有要求。使用`regist_update_system`即可注册:
+`update system`使用`regist_update_system`即可注册:
 
 ```cpp
 // 使用lambda，无捕获的lambda会被转换为普通函数，在lambda前面加`+`可以获得对应函数类型
@@ -179,6 +181,76 @@ void system(commands cmds) {
     cmds.remove_resource<Res>();
 }
 ```
+
+### signal系统
+
+signal类似于Qt的信号槽或Godot的signal。用于更好地实现观察者模式。
+
+在`system`声明中，可以使用`event_dispatcher<T>`来注册/触发/缓存一个T类型事件：
+
+```cpp
+void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit,
+             gecs::event_dispatcher<SDL_KeyboardEvent> keyboard);
+```
+
+`event_dispatcher`可以链接多个回调函数，以便于在事件触发时自动调用此函数：
+
+```cpp
+constexpr auto f = +[](const SDL_QuitEvent& event,
+                        gecs::resource<gecs::mut<GameContext>> ctx) {
+    ctx->shouldClose = true;
+};
+
+// 使用sink()函数获得信号槽，然后增加一个函数
+quit.sink().add<f>();
+```
+
+函数会按照加入的顺序被调用。
+
+函数的声明和`system`一样，只是第一个参数必须是事件类型`T`相关的`const T&`。
+
+删除事件回调函数也是通过信号槽删除，这里不再演示。
+
+想要缓存新事件，可以使用`enqueue()`函数:
+
+```cpp
+void EventDispatcher(gecs::resource<gecs::mut<GameContext>> ctx,
+                     gecs::event_dispatcher<SDL_QuitEvent> quit,
+                     gecs::event_dispatcher<SDL_KeyboardEvent> keyboard) {
+    while (SDL_PollEvent(&ctx->event)) {
+        if (ctx->event.type == SDL_QUIT) {
+            // 放入一个SDL_QuitEvent
+            quit.enqueue(ctx->event.quit);
+        }
+        if (ctx->event.type == SDL_KEYDOWN || ctx->event.type == SDL_KEYUP) {
+            // 放入一个SDL_KeyboardEvent
+            keyboard.enqueue(ctx->event.key);
+        }
+    }
+}
+```
+
+缓存的事件会被放在缓存列表里，可以被一次性全部触发：
+
+```cpp
+quit.trigger_cached();
+
+// 如果有必要，触发完不要忘了删除所有缓存事件
+quit.clear_cache();
+
+// 或者，也可以调用update()自动做上面两个事情
+quit.update();
+```
+
+如果不触发，在`world.update()`的最后（所有`update system`调用后）会自动触发所有事件并删除。
+
+如果想要立刻触发，使用：
+
+```cpp
+quit.trigger(YourQuitEvent);
+```
+
+来触发。
 
 ### Demo
 
