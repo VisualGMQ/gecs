@@ -5,6 +5,7 @@
 #include "gecs/core/utility.hpp"
 #include "querier.hpp"
 #include "resource.hpp"
+#include "registry_wrapper.hpp"
 
 #include <functional>
 
@@ -76,6 +77,20 @@ struct is_event_dispatcher<basic_event_dispatcher_wrapper<T, WorldT>> {
 template <typename T>
 constexpr bool is_event_dispatcher_v = is_event_dispatcher<T>::value;
 
+template <typename T>
+struct is_registry {
+    static constexpr bool value = false;
+};
+
+template <typename T>
+struct is_registry<registry_wrapper<T>> {
+    static constexpr bool value = true;
+};
+
+template <typename T>
+constexpr bool is_registry_v = is_registry<T>::value;
+
+
 template <typename RegistryT, typename Querier>
 struct querier_construct_helper;
 
@@ -99,6 +114,11 @@ T construct_event_dispatcher(RegistryT& reg) {
     return reg.template event_dispatcher<typename T::event_type>();
 }
 
+template <typename RegistryT>
+auto construct_registry(RegistryT& reg) {
+    return registry_wrapper{reg};
+}
+
 template <typename Querier, typename RegistryT>
 auto construct_querier(RegistryT& registry) {
     return querier_construct_helper<RegistryT, Querier>{}(registry);
@@ -119,6 +139,8 @@ auto construct(RegistryT& reg) {
         return construct_resource<T>(reg);
     } else if constexpr (is_event_dispatcher_v<T>) {
         return construct_event_dispatcher<T>(reg);
+    } else if constexpr (is_registry_v<T>) {
+        return construct_registry(reg);
     } else {
         GECS_ASSERT(false, "can't construct a unsupport type");
     }

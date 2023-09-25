@@ -13,6 +13,23 @@
 #define SPARSE_PAGE_SIZE 4096
 #endif
 
+#ifndef GECS_GET_TYPE_INFO
+#define GECS_GET_TYPE_INFO(type) nullptr
+#endif
+
+namespace gecs::internal {
+
+struct fake_reference_any final {
+    template <typename T>
+    fake_reference_any(const T&) {}
+};
+
+}
+
+#ifndef GECS_REFERENCE_ANY
+#define GECS_REFERENCE_ANY ::gecs::internal::fake_reference_any
+#endif
+
 namespace gecs {
 
 namespace config {
@@ -45,6 +62,8 @@ inline bool operator!=(uint64_t num, Entity e) {
 }
 
 using id_type = size_t;
+
+
 
 }  // namespace config
 

@@ -4,6 +4,7 @@
 #include "gecs/entity/commands.hpp"
 #include "gecs/entity/querier.hpp"
 #include "gecs/entity/resource.hpp"
+#include "gecs/entity/registry_wrapper.hpp"
 #include "world.hpp"
 
 namespace gecs {
@@ -17,5 +18,7 @@ using commands = typename world::registry_type::commands_type;
 
 template <typename T>
 using event_dispatcher = typename world::registry_type::event_dispatcher_wrapper_type<T>;
+
+using registry = typename registry_wrapper<typename world::registry_type>;
 
 }  // namespace gecs

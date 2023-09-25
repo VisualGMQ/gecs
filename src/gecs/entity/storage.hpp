@@ -260,6 +260,7 @@ public:
         base_type::clear();
     }
 
+    basic_storage(const void* type_info = nullptr): type_info_(type_info) {}
     ~basic_storage() { release(); }
 
     //! @brief use quick sort to sort payloads and packed array
@@ -272,8 +273,11 @@ public:
         });
     }
 
+    auto& type_info() const { return type_info_; }
+
 private:
     payload_container_type payloads_;
+    const void* type_info_ = nullptr;   // for dynamic reflection runtime info
 
     payload_container_type& assure(size_type size) noexcept {
         size_t oldSize = payloads_.size();

@@ -121,9 +121,18 @@ public:
         return static_cast<storage_for_t<Type>&>(*pools_[id])[entity];
     }
 
+    GECS_REFERENCE_ANY get_mut(EntityT entity, const void* type_info) noexcept {
+        for (auto& info : type_infos_) {
+            if (info.type_info == type_info) {
+                return info.convert_to_any(*this, entity);
+            }
+        }
+        return {};
+    }
+
     template <typename Type>
     Type& get_mut(EntityT entity) noexcept {
-        return const_cast<Type&>(std::as_const(*this).get());
+        return const_cast<Type&>(std::as_const(*this).get<Type>(entity));
     }
 
     template <typename Type>
@@ -149,6 +158,22 @@ public:
     template <typename Type>
     storage_for_t<Type>& pool() noexcept {
         return const_cast<storage_for_t<Type>>(std::as_const(*this).pool());
+    }
+
+    template <typename Type>
+    bool has(entity_type entity) const noexcept {
+        auto& p = pool<Type>();
+        return p.contain(entity);
+    }
+
+    bool has(entity_type entity, const void* type_info) const noexcept {
+        for (int i = 0; i < pools_.size(); i++) {
+            if (pools_[i]->contain(entity) &&
+                type_infos_[i].type_info == type_info) {
+                return true;
+            }
+        }
+        return false;
     }
 
     const entities_container_type& entities() const noexcept {
@@ -229,9 +254,14 @@ public:
         size_t idx = component_id_generator::gen<Type>();
         if (idx >= pools_.size()) {
             pools_.resize(idx + 1);
+            type_infos_.resize(idx + 1);
         }
         if (pools_[idx] == nullptr) {
-            pools_[idx] = std::make_unique<storage_for_t<Type>>();
+            pools_[idx] =
+                std::make_unique<storage_for_t<Type>>(GECS_GET_TYPE_INFO(Type));
+            type_infos_[idx].type_info = GECS_GET_TYPE_INFO(Type);
+            type_infos_[idx].convert_to_any =
+                &TypeInfo::convert_type_to_any<Type>;
         }
         return static_cast<storage_for_t<Type>&>(*pools_[idx]);
     }
@@ -243,9 +273,11 @@ public:
             event_dispatchers_.resize(idx + 1);
         }
         if (event_dispatchers_[idx] == nullptr) {
-            event_dispatchers_[idx] = std::make_unique<event_dispatcher_type_for_t<Type>>(*this);
+            event_dispatchers_[idx] =
+                std::make_unique<event_dispatcher_type_for_t<Type>>(*this);
         }
-        return static_cast<event_dispatcher_type_for_t<Type>&>(*event_dispatchers_[idx]);
+        return static_cast<event_dispatcher_type_for_t<Type>&>(
+            *event_dispatchers_[idx]);
     }
 
     template <auto System>
@@ -328,7 +360,7 @@ public:
 
     template <typename T>
     void switch_state(T state) {
-        will_change_state_ =  static_cast<std::underlying_type_t<T>>(state);
+        will_change_state_ = static_cast<std::underlying_type_t<T>>(state);
     }
 
     void startup() noexcept {
@@ -412,7 +444,7 @@ public:
     }
 
 private:
-    struct State {
+    struct State final {
         system_container_type on_enter;
         system_container_type on_update;
         system_container_type on_exit;
@@ -422,9 +454,25 @@ private:
     std::optional<uint32_t> cur_state_;
     std::optional<uint32_t> will_change_state_;
 
+    struct TypeInfo final {
+        const void* type_info;
+        GECS_REFERENCE_ANY (*convert_to_any)(self_type&, entity_type);
+
+        template <typename T>
+        static GECS_REFERENCE_ANY convert_type_to_any(self_type& reg,
+                                                      entity_type entity) {
+            auto ref = GECS_REFERENCE_ANY{reg.get_mut<T>(entity)};
+            return ref;
+        }
+    };
+
+    using type_info_container_type = std::vector<TypeInfo>;
+
     owner_type* owner_;
 
     pool_container_type pools_;
+    type_info_container_type type_infos_;
+
     entities_container_type entities_;
     system_container_type startup_systems_;
     system_container_type update_systems_;

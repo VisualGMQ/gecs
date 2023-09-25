@@ -18,6 +18,8 @@ public:
     using payload_type = typename underlying_type::payload_type;
     using sigh_type = sigh<void(entity_type, payload_type& payload)>;
 
+    explicit sigh_mixin(const void* type_info = nullptr): underlying_type{type_info} {}
+
     //! @brief get the construction signals
     auto& on_construct() noexcept { return this->construction_; }
 
