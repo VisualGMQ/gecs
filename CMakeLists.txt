@@ -7,6 +7,11 @@ target_include_directories(gecs INTERFACE "./src")
 target_compile_features(gecs INTERFACE cxx_std_17)
 
 option(GECS_BUILD_TEST "enable unittest" OFF)
+
+if (PROJECT_IS_TOP_LEVEL)
+    set(GECS_BUILD_TEST ON)
+endif()
+
 if (GECS_BUILD_TEST)
     enable_testing()
     add_subdirectory(test)

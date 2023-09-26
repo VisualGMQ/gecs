@@ -19,6 +19,6 @@ using commands = typename world::registry_type::commands_type;
 template <typename T>
 using event_dispatcher = typename world::registry_type::event_dispatcher_wrapper_type<T>;
 
-using registry = typename registry_wrapper<typename world::registry_type>;
+using registry = registry_wrapper<typename world::registry_type>;
 
 }  // namespace gecs

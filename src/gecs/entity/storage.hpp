@@ -370,6 +370,9 @@ public:
 
     bool empty() const noexcept { return length_ == 0; }
 
+    auto& packed() const noexcept { return base_type::packed(); }
+    auto& packed() noexcept { return base_type::packed(); }
+
 private:
     size_type length_ = 0;
 };

@@ -19,7 +19,7 @@ public:
 
     template <typename T>
     bool has(entity_type entity) const noexcept {
-        return reg_->has<T>(entity);
+        return reg_->template has<T>(entity);
     }
 
     bool has(entity_type entity, const void* type_info) const noexcept {

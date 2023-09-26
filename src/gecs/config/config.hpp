@@ -22,6 +22,8 @@ namespace gecs::internal {
 struct fake_reference_any final {
     template <typename T>
     fake_reference_any(const T&) {}
+
+    fake_reference_any() = default;
 };
 
 }

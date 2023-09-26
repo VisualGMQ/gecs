@@ -132,7 +132,7 @@ public:
 
     template <typename Type>
     Type& get_mut(EntityT entity) noexcept {
-        return const_cast<Type&>(std::as_const(*this).get<Type>(entity));
+        return const_cast<Type&>(std::as_const(*this).template get<Type>(entity));
     }
 
     template <typename Type>
@@ -181,7 +181,7 @@ public:
     }
 
     entities_container_type& entities() noexcept {
-        return const_cast<entities_container_type>(
+        return const_cast<entities_container_type&>(
             std::as_const(*this).entities());
     }
 
@@ -261,7 +261,7 @@ public:
                 std::make_unique<storage_for_t<Type>>(GECS_GET_TYPE_INFO(Type));
             type_infos_[idx].type_info = GECS_GET_TYPE_INFO(Type);
             type_infos_[idx].convert_to_any =
-                &TypeInfo::convert_type_to_any<Type>;
+                TypeInfo::template convert_type_to_any<Type>;
         }
         return static_cast<storage_for_t<Type>&>(*pools_[idx]);
     }

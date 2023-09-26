@@ -14,12 +14,12 @@ struct Comp2 final {
 };
 
 using trivial_owner = int;
-using registry = gecs::basic_registry<trivial_owner, gecs::config::Entity, gecs::config::PageSize>;
+using registry_type = gecs::basic_registry<trivial_owner, gecs::config::Entity, gecs::config::PageSize>;
 
 trivial_owner owner;
 
 TEST_CASE("registry") {
-    registry reg(owner);
+    registry_type reg(owner);
 
     SECTION("misc") {
         auto entity1 = reg.create();
