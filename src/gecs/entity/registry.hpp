@@ -151,19 +151,18 @@ public:
     }
 
     template <typename Type>
-    const storage_for_t<Type>& pool() const noexcept {
+    storage_for_t<Type>& pool() noexcept {
         return assure_storage<Type>();
     }
 
     template <typename Type>
-    storage_for_t<Type>& pool() noexcept {
-        return const_cast<storage_for_t<Type>>(std::as_const(*this).pool());
-    }
-
-    template <typename Type>
     bool has(entity_type entity) const noexcept {
-        auto& p = pool<Type>();
-        return p.contain(entity);
+        auto id = component_id_generator::gen<Type>();
+        if (id >= pools_.size()) {
+            return false;
+        }
+
+        return pools_[id]->contain(entity);
     }
 
     bool has(entity_type entity, const void* type_info) const noexcept {
@@ -187,11 +186,6 @@ public:
 
     typename entities_container_type::size_type size() const noexcept {
         return entities_.size();
-    }
-
-    template <typename Type>
-    auto& pool() const noexcept {
-        return assure_storage<Type>();
     }
 
     template <typename... Types>

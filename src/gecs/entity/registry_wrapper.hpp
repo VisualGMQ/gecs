@@ -32,6 +32,11 @@ public:
 
     auto& entities() const noexcept { return reg_->entities(); }
 
+    template <typename T>
+    auto res() noexcept {
+        return reg_->template res<T>();
+    }
+
 private:
     registry_type* reg_;
 };
