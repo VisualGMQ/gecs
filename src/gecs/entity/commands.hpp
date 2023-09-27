@@ -44,6 +44,10 @@ public:
         reg_->template remove<Type>(entity);
     }
 
+    void remove(entity_type entity, ::mirrow::drefl::type_info type) noexcept {
+        reg_->remove(entity, type);
+    }
+
     bool alive(entity_type entity) const noexcept {
         return reg_->alive(entity);
     }

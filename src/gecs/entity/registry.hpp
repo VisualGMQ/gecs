@@ -140,6 +140,14 @@ public:
         assure_storage<Type>().remove(entity);
     }
 
+    void remove(EntityT entity, ::mirrow::drefl::type_info type) noexcept {
+        for (int i = 0; i < type_infos_.size(); i++) {
+            if (type_infos_[i].type_info == type.type_node()) {
+                pools_[i]->remove(entity);
+            }
+        }
+    }
+
     template <typename Type>
     bool contain(EntityT entity) const noexcept {
         auto id = component_id_generator::gen<Type>();
