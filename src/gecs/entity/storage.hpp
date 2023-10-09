@@ -1,11 +1,12 @@
 #pragma once
 
-#include "sparse_set.hpp"
+#include "gecs/entity/sparse_set.hpp"
+#include "gecs/config/config.hpp"
 
 namespace gecs {
 
 template <typename EntityT, typename Payload, size_t PageSize,
-          typename Allocator>
+          typename Allocator, typename TypeInfo>
 class basic_storage;
 
 namespace internal {
@@ -113,12 +114,13 @@ private:
  * @tparam Payload  the payload type
  * @tparam PageSize  then page size for basic_sparse_set
  * @tparam Allocator then allocator to allocate Payload
+ * @tparam TypeInfo runtime typeinfo(if you don't need, set to config::type_info)
  */
 template <typename EntityT, typename Payload, size_t PageSize,
-          typename Allocator>
+          typename Allocator, typename TypeInfo>
 class basic_storage : public basic_sparse_set<EntityT, PageSize> {
 public:
-    using type = basic_storage<EntityT, Payload, PageSize, Allocator>;
+    using type = basic_storage<EntityT, Payload, PageSize, Allocator, TypeInfo>;
     using payload_type = Payload;
     using entity_type = EntityT;
     using entity_numeric_type =
@@ -260,7 +262,7 @@ public:
         base_type::clear();
     }
 
-    basic_storage(const void* type_info = nullptr): type_info_(type_info) {}
+    basic_storage(const config::type_info& type_info = {}): type_info_(type_info) {}
     ~basic_storage() { release(); }
 
     //! @brief use quick sort to sort payloads and packed array
@@ -277,7 +279,7 @@ public:
 
 private:
     payload_container_type payloads_;
-    const void* type_info_ = nullptr;   // for dynamic reflection runtime info
+    TypeInfo type_info_ = {}; // for dynamic reflection runtime info
 
     payload_container_type& assure(size_type size) noexcept {
         size_t oldSize = payloads_.size();
@@ -324,7 +326,7 @@ private:
 };
 
 template <typename EntityT, size_t PageSize>
-class basic_storage<EntityT, EntityT, PageSize, void>
+class basic_storage<EntityT, EntityT, PageSize, void, void>
     : protected basic_sparse_set<EntityT, PageSize> {
 public:
     using entity_type = EntityT;

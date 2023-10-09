@@ -13,6 +13,10 @@
 #define SPARSE_PAGE_SIZE 4096
 #endif
 
+#ifndef GECS_TYPE_INFO_TYPE
+#define GECS_TYPE_INFO_TYPE const void*
+#endif
+
 #ifndef GECS_GET_TYPE_INFO
 #define GECS_GET_TYPE_INFO(type) nullptr
 #endif
@@ -35,6 +39,8 @@ struct fake_reference_any final {
 namespace gecs {
 
 namespace config {
+
+using type_info = GECS_TYPE_INFO_TYPE;
 
 enum class Entity : ENTITY_NUMERIC_TYPE {};
 constexpr uint32_t PageSize = SPARSE_PAGE_SIZE;

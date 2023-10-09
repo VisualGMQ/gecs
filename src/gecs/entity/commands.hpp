@@ -1,7 +1,7 @@
 #pragma once
 
-#include "entity.hpp"
-#include "resource.hpp"
+#include "gecs/entity/entity.hpp"
+#include "gecs/entity/resource.hpp"
 #include <string>
 
 namespace gecs {
@@ -44,7 +44,7 @@ public:
         reg_->template remove<Type>(entity);
     }
 
-    void remove(entity_type entity, ::mirrow::drefl::type_info type) noexcept {
+    void remove(entity_type entity, const config::type_info& type) noexcept {
         reg_->remove(entity, type);
     }
 

@@ -5,7 +5,7 @@
 #include "gecs/entity/querier.hpp"
 #include "gecs/entity/resource.hpp"
 #include "gecs/entity/registry_wrapper.hpp"
-#include "world.hpp"
+#include "gecs/entity/world.hpp"
 
 namespace gecs {
 

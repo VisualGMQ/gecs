@@ -1,11 +1,11 @@
 #pragma once
 
-#include "commands.hpp"
-#include "event_dispatcher.hpp"
+#include "gecs/entity/commands.hpp"
+#include "gecs/entity/event_dispatcher.hpp"
 #include "gecs/core/utility.hpp"
-#include "querier.hpp"
-#include "resource.hpp"
-#include "registry_wrapper.hpp"
+#include "gecs/entity/querier.hpp"
+#include "gecs/entity/resource.hpp"
+#include "gecs/entity/registry_wrapper.hpp"
 
 #include <functional>
 

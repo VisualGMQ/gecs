@@ -9,7 +9,7 @@ using namespace gecs;
 #define Entity(x) static_cast<config::Entity>(x)
 
 TEST_CASE("pure entity storage") {
-    basic_storage<config::Entity, config::Entity, config::PageSize, void> storage;
+    basic_storage<config::Entity, config::Entity, config::PageSize, void, void> storage;
 
     REQUIRE(storage.size() == 0);
     REQUIRE(storage.base_size() == 0);
@@ -49,7 +49,7 @@ struct Value {
 };
 
 TEST_CASE("storage") {
-    basic_storage<config::Entity, Vector2, config::PageSize, std::allocator<Vector2>> storage;
+    basic_storage<config::Entity, Vector2, config::PageSize, std::allocator<Vector2>, config::type_info> storage;
 
     SECTION("misc") {
         REQUIRE(storage.size() == 0);
@@ -98,7 +98,7 @@ TEST_CASE("storage") {
     }
 
     SECTION("sort") {
-        basic_storage<config::Entity, Value, config::PageSize, std::allocator<Value>> storage;
+        basic_storage<config::Entity, Value, config::PageSize, std::allocator<Value>, config::type_info> storage;
         storage.emplace<Value>(Entity(0), Value{2});
         storage.emplace<Value>(Entity(1), Value{8});
         storage.emplace<Value>(Entity(2), Value{5});

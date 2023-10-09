@@ -1,7 +1,8 @@
 #pragma once
 
 #include "gecs/signal/sigh.hpp"
-#include "storage.hpp"
+#include "gecs/entity/storage.hpp"
+#include "gecs/config/config.hpp"
 
 namespace gecs {
 
@@ -18,7 +19,7 @@ public:
     using payload_type = typename underlying_type::payload_type;
     using sigh_type = sigh<void(entity_type, payload_type& payload)>;
 
-    explicit sigh_mixin(const void* type_info = nullptr): underlying_type{type_info} {}
+    explicit sigh_mixin(const config::type_info type_info = {}): underlying_type{type_info} {}
 
     //! @brief get the construction signals
     auto& on_construct() noexcept { return this->construction_; }
@@ -56,11 +57,11 @@ private:
     sigh_type destruction_;
 };
 
-template <typename EntityT, size_t PageSize>
-class sigh_mixin<basic_storage<EntityT, EntityT, PageSize, void>> final
-    : public basic_storage<EntityT, EntityT, PageSize, void> {
+template <typename EntityT, size_t PageSize, typename TypeInfo>
+class sigh_mixin<basic_storage<EntityT, EntityT, PageSize, void, TypeInfo>> final
+    : public basic_storage<EntityT, EntityT, PageSize, void, TypeInfo> {
 public:
-    using underlying_type = basic_storage<EntityT, EntityT, PageSize, void>;
+    using underlying_type = basic_storage<EntityT, EntityT, PageSize, void, TypeInfo>;
     using entity_type = typename underlying_type::entity_type;
     using sigh_type = sigh<void(entity_type)>;
 

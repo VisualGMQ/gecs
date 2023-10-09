@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gecs/config/config.hpp"
+
 namespace gecs {
 
 /**
@@ -22,11 +24,11 @@ public:
         return reg_->template has<T>(entity);
     }
 
-    bool has(entity_type entity, const void* type_info) const noexcept {
+    bool has(entity_type entity, const config::type_info& type_info) const noexcept {
         return reg_->has(entity, type_info);
     }
 
-    GECS_REFERENCE_ANY get_mut(entity_type entity, const void* type_info) noexcept {
+    GECS_REFERENCE_ANY get_mut(entity_type entity, const config::type_info& type_info) noexcept {
         return reg_->get_mut(entity, type_info);
     }
 

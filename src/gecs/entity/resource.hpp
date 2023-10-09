@@ -1,9 +1,9 @@
 #pragma once
 
-#include "entity.hpp"
+#include "gecs/entity/entity.hpp"
 #include "gecs/core/singlton.hpp"
 #include "gecs/core/utility.hpp"
-#include "querier.hpp"
+#include "gecs/entity/querier.hpp"
 
 #include <memory>
 #include <type_traits>

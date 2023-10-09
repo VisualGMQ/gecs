@@ -1,16 +1,16 @@
 #pragma once
 
-#include "commands.hpp"
-#include "event_dispatcher.hpp"
+#include "gecs/entity/commands.hpp"
+#include "gecs/entity/event_dispatcher.hpp"
 #include "gecs/core/ident.hpp"
 #include "gecs/core/type_list.hpp"
 #include "gecs/core/utility.hpp"
 #include "gecs/signal/sink.hpp"
-#include "querier.hpp"
-#include "resource.hpp"
-#include "sigh_mixin.hpp"
-#include "storage.hpp"
-#include "system_constructor.hpp"
+#include "gecs/entity/querier.hpp"
+#include "gecs/entity/resource.hpp"
+#include "gecs/entity/sigh_mixin.hpp"
+#include "gecs/entity/storage.hpp"
+#include "gecs/entity/system_constructor.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -27,7 +27,7 @@ struct storage_for;
 template <typename EntityT, size_t PageSize, typename Type>
 struct storage_for<basic_sparse_set<EntityT, PageSize>, Type> {
     using type = sigh_mixin<
-        basic_storage<EntityT, Type, PageSize, std::allocator<Type>>>;
+        basic_storage<EntityT, Type, PageSize, std::allocator<Type>, config::type_info>>;
 };
 
 template <typename SparseSetT, typename Type>
@@ -46,7 +46,7 @@ public:
     using storage_for_t = internal::storage_for_t<pool_base_type, Type>;
 
     using entities_container_type =
-        sigh_mixin<basic_storage<EntityT, EntityT, PageSize, void>>;
+        sigh_mixin<basic_storage<EntityT, EntityT, PageSize, void, void>>;
     using pool_container_type = std::vector<std::unique_ptr<pool_base_type>>;
     using pool_container_reference = pool_container_type&;
     using entity_type = EntityT;
@@ -121,7 +121,7 @@ public:
         return static_cast<storage_for_t<Type>&>(*pools_[id])[entity];
     }
 
-    GECS_REFERENCE_ANY get_mut(EntityT entity, const void* type_info) noexcept {
+    GECS_REFERENCE_ANY get_mut(EntityT entity, const config::type_info& type_info) noexcept {
         for (auto& info : type_infos_) {
             if (info.type_info == type_info) {
                 return info.convert_to_any(*this, entity);
@@ -140,9 +140,9 @@ public:
         assure_storage<Type>().remove(entity);
     }
 
-    void remove(EntityT entity, ::mirrow::drefl::type_info type) noexcept {
+    void remove(EntityT entity, const config::type_info& type_info) noexcept {
         for (int i = 0; i < type_infos_.size(); i++) {
-            if (type_infos_[i].type_info == type.type_node()) {
+            if (type_infos_[i].type_info == type_info) {
                 pools_[i]->remove(entity);
             }
         }
@@ -173,7 +173,7 @@ public:
         return pools_[id]->contain(entity);
     }
 
-    bool has(entity_type entity, const void* type_info) const noexcept {
+    bool has(entity_type entity, const config::type_info& type_info) const noexcept {
         for (int i = 0; i < pools_.size(); i++) {
             if (pools_[i]->contain(entity) &&
                 type_infos_[i].type_info == type_info) {
@@ -457,7 +457,7 @@ private:
     std::optional<uint32_t> will_change_state_;
 
     struct TypeInfo final {
-        const void* type_info;
+        config::type_info type_info;
         GECS_REFERENCE_ANY (*convert_to_any)(self_type&, entity_type);
 
         template <typename T>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "entity.hpp"
+#include "gecs/entity/entity.hpp"
 #include "gecs/core/utility.hpp"
 
 #include <array>
