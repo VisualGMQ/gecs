@@ -114,12 +114,12 @@ private:
         using args_list = type_list<Args...>;
         if constexpr (std::is_invocable_r_v<
                           Ret, decltype(Func),
-                          type_list_element_t<Index, args_list>...>) {
+                          list_element_t<args_list, Index>...>) {
             return [](const void*, Args... args) -> Ret {
                 auto forward_args =
                     std::forward_as_tuple(std::forward<Args>(args)...);
                 return static_cast<Ret>(std::invoke(
-                    Func, std::forward<type_list_element_t<Index, args_list>>(
+                    Func, std::forward<list_element_t<args_list, Index>>(
                               std::get<Index>(forward_args))...));
             };
         } else {
@@ -135,7 +135,7 @@ private:
         using args_list = type_list<Args...>;
         if constexpr (std::is_invocable_r_v<
                           Ret, decltype(Func), Payload&,
-                          type_list_element_t<Index, args_list>...>) {
+                          list_element_t<args_list, Index>...>) {
             return [](const void* instance, Args... args) -> Ret {
                 auto forward_args =
                     std::forward_as_tuple(std::forward<Args>(args)...);
@@ -143,7 +143,7 @@ private:
                     Func,
                     *static_cast<Payload*>(
                         const_cast<constness_as_t<void, Payload>*>(instance)),
-                    std::forward<type_list_element_t<Index, args_list>>(
+                    std::forward<list_element_t<args_list, Index>>(
                         std::get<Index>(forward_args))...));
             };
         } else {
@@ -159,7 +159,7 @@ private:
         using args_list = type_list<Args...>;
         if constexpr (std::is_invocable_r_v<
                           Ret, decltype(Func), Payload*,
-                          type_list_element_t<Index, args_list>...>) {
+                          list_element_t<args_list, Index>...>) {
             return [](const void* instance, Args... args) -> Ret {
                 auto forward_args =
                     std::forward_as_tuple(std::forward<Args>(args)...);
@@ -167,7 +167,7 @@ private:
                     Func,
                     static_cast<Payload*>(
                         const_cast<constness_as_t<void, Payload>*>(instance)),
-                    std::forward<type_list_element_t<Index, args_list>>(
+                    std::forward<list_element_t<args_list, Index>>(
                         std::get<Index>(forward_args))...));
             };
         } else {

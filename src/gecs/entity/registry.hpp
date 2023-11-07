@@ -199,44 +199,52 @@ public:
     template <typename... Types>
     querier_type<Types...> query() noexcept {
         static_assert(sizeof...(Types) > 0, "must provide query component");
-        if constexpr (sizeof...(Types) == 1) {
+        using condition = internal::get_query_condition_t<type_list<Types...>>;
+        if constexpr (condition::require_list::size == 1 &&
+                      !condition::is_only &&
+                      condition::forbid_list::size == 0) {
+            using type = list_head_t<typename condition::require_list>;
             auto pool_tuple =
-                std::tuple(&static_cast<storage_for_by_mutable_t<Types>&>(
-                    assure_storage<internal::remove_mut_t<Types>>())...);
+                std::tuple(&static_cast<storage_for_by_mutable_t<type>&>(
+                    assure_storage<internal::remove_mut_t<type>>()));
             return querier_type<Types...>(pool_tuple,
                                           std::get<0>(pool_tuple)->packed());
         } else {
             typename pool_base_type::packed_container_type entities;
-            std::array indices = {component_id_generator::gen<
-                internal::remove_mut_t<Types>>()...};
 
-            bool valid_query =
-                std::all_of(indices.begin(), indices.end(), [&](auto idx) {
-                    return idx < pools_.size() && pools_[idx] != nullptr;
-                });
+            std::array indices = get_component_ids(typename condition::require_list{});
 
-            if (valid_query) {
-                size_t idx = minimal_idx<Types...>(pools_, indices);
-                for (int i = 0; i < pools_[idx]->size(); i++) {
-                    auto entity = pools_[idx]->packed()[i];
-                    bool is_contain_all = true;
-                    for (auto index : indices) {
-                        if (!pools_[index]->contain(
-                                static_cast<entity_type>(entity))) {
-                            is_contain_all = false;
-                            break;
-                        }
-                    }
-                    if (is_contain_all) {
-                        entities.push_back(entity);
-                    }
+            std::optional<size_t> idx =
+                minimal_idx<typename condition::require_list>(
+                    pools_, indices);
+
+            if (!idx) {
+                return querier_type<Types...>{get_storages(entities, typename condition::require_list{}), {}};
+            }
+
+            for (int i = 0; i < pools_[idx.value()]->size(); i++) {
+                auto entity = pools_[idx.value()]->packed()[i];
+
+                if (internal::check_condition<condition>(static_cast<entity_type>(entity), pools_)) {
+                    entities.push_back(entity);
                 }
             }
-            return querier_type<Types...>(
-                std::tuple(&static_cast<storage_for_by_mutable_t<Types>&>(
-                    assure_storage<internal::remove_mut_t<Types>>())...),
-                entities);
+
+            auto components = get_storages(entities, typename condition::require_list{});
+
+            return querier_type<Types...>{get_storages(entities, typename condition::require_list{}), entities};
         }
+    }
+
+    template <typename... Ts>
+    std::array<size_t, sizeof...(Ts)> get_component_ids(type_list<Ts...>) const {
+        return {component_id_generator::gen<Ts>()...};
+    }
+
+    template <typename... Ts, typename Entities>
+    auto get_storages(Entities& entities, type_list<Ts...>) {
+        return std::tuple{&static_cast<storage_for_by_mutable_t<Ts>&>(
+                    assure_storage<internal::remove_mut_t<Ts>>())...};
     }
 
     commands_type commands() noexcept { return commands_type{*owner_, *this}; }
@@ -481,13 +489,16 @@ private:
     system_container_type shutdown_systems_;
     event_dispatcher_container event_dispatchers_;
 
-    template <typename... Types>
-    size_t minimal_idx(pool_container_reference& pools,
-                       const std::array<size_t, sizeof...(Types)>& indices) {
+    template <typename List>
+    std::optional<size_t> minimal_idx(pool_container_reference& pools,
+                       const std::array<size_t, List::size>& indices) {
         size_t minimal = std::numeric_limits<size_t>::max();
         size_t min_idx = 0;
 
         for (auto idx : indices) {
+            if (idx >= pools.size()) {
+                return std::nullopt;
+            }
             minimal =
                 pools[idx]->size() < minimal ? pools[idx]->size() : minimal;
             min_idx = idx;

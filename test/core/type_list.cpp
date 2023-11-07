@@ -6,11 +6,11 @@ using namespace gecs;
 
 using list1 = type_list<float, double, int>;
 
-using t = type_list_element_t<0, list1>;
+using t = list_element_t<list1, 0>;
 
-static_assert(std::is_same_v<type_list_element_t<0, list1>, float>);
-static_assert(std::is_same_v<type_list_element_t<1, list1>, double>);
-static_assert(std::is_same_v<type_list_element_t<2, list1>, int>);
+static_assert(std::is_same_v<list_element_t<list1, 0>, float>);
+static_assert(std::is_same_v<list_element_t<list1, 1>, double>);
+static_assert(std::is_same_v<list_element_t<list1, 2>, int>);
 
 int main() {
     return 0;

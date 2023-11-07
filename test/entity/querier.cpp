@@ -2,7 +2,7 @@
 #include "catch.hpp"
 
 #include "gecs/entity/querier.hpp"
-#include "gecs/entity/world.hpp"
+#include "gecs/entity/registry.hpp"
 
 using namespace gecs;
 
@@ -16,6 +16,10 @@ struct Comp2 {
 
 struct Comp3 {
     float value;
+};
+
+struct Comp4 {
+    bool b;
 };
 
 using trivial_owner = int;
@@ -87,6 +91,7 @@ TEST_CASE("multiple querier") {
     reg.emplace<Comp1>(entities[3], Comp1{9});
     reg.emplace<Comp2>(entities[1], Comp2{"ent2"});
     reg.emplace<Comp2>(entities[4], Comp2{"ent3"});
+    reg.emplace<Comp4>(entities[0], Comp4{true});
 
     SECTION("non-mutable query") {
         auto querier = reg.query<Comp1, Comp2>();
@@ -117,5 +122,41 @@ TEST_CASE("multiple querier") {
         REQUIRE(std::get<1>(*it).value == 8);
         it ++;
         REQUIRE(std::get<1>(*it).value == 9);
+    }
+
+    SECTION("`without` query", "[conditional]") {
+        auto querier = reg.query<Comp1, without<Comp2>>();
+        REQUIRE(querier.size() == 3);
+
+        auto it = querier.begin();
+        REQUIRE(std::get<1>(*it).value == 9);
+        it++;
+        REQUIRE(std::get<1>(*it).value == 0);
+        it++;
+        REQUIRE(std::get<1>(*it).value == 8);
+
+        // FIXME: make this test pass(now querier.size() == 0)
+        // auto querier2 = reg.query<without<Comp1>>();
+        // REQUIRE(querier2.size() == 1);
+
+        // FIXME: make this test pass
+        // auto querier3 = reg.query<Comp4, without<Comp1>>();
+        // REQUIRE(querier3.size() == 1);
+        // auto it = querier3.begin();
+        // REQUIRE(std::get<1>(*it).b == true);
+    }
+
+    SECTION("`only` query", "[conditional]") {
+        auto querier = reg.query<only<Comp1>>();
+        REQUIRE(querier.size() == 2);
+
+        auto it = querier.begin();
+        REQUIRE(std::get<1>(*it).value == 9);
+        it++;
+        REQUIRE(std::get<1>(*it).value == 0);
+
+        auto querier2 = reg.query<only<Comp1, Comp2>>();
+        REQUIRE(querier2.size() == 1);
+        REQUIRE(std::get<1>(*querier2.begin()).value == 2);
     }
 }

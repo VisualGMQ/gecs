@@ -126,6 +126,8 @@ world.regist_update_system<+[](commands cmd, querier<Name> q1)>();
 
 ### querier和resource
 
+#### querier
+
 `querier`用于从`world`中查询拥有某种组件的实体，一般作为`system`的参数：
 
 ```cpp
@@ -147,6 +149,24 @@ for (auto& [entity, comp1, comp2, comp3] : multi_queirer) {
     ...
 }
 ```
+
+可以使用一些条件来进行查询：
+
+* `only<Ts...>`：要求实体只能拥有指定的组件，使用此条件时不能有其他参数：
+    ```cpp
+    void update_system(querier<only<Comp1, Comp2>> q); // 会查询所有只含有Comp1, Comp2的组件
+
+    void update_system(querier<Comp1, only<Comp2, Comp3>>); // 非法！only只能单独存在且只有一个
+    ```
+* `without<T>`：要求实体不能拥有此组件，语句中只能有一个`without`并且`without`内只能有一个类型参数(待修复)。语句中必须含有其他的无条件查询类型（待修复）：
+    ```cpp
+    void system(querier<Comp1, without<Comp2>>);    //查询所有含有Comp1但不含有Comp2的组件
+    // 以下待修复:
+    void system(querier<without<Comp2>>);   // 非法！必须含有至少一个无查询条件的类型
+    void system(querier<Comp1, without<Comp2, Comp3>>); // 非法！without只能有一个参数
+    ```
+
+#### resource
 
 `resource`则是对资源的获取。资源是一种在ECS中唯一的组件：
 

@@ -6,6 +6,8 @@ add_library(gecs INTERFACE)
 target_include_directories(gecs INTERFACE "./src")
 target_compile_features(gecs INTERFACE cxx_std_17)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 option(GECS_BUILD_TEST "enable unittest" OFF)
 
 if (PROJECT_IS_TOP_LEVEL)

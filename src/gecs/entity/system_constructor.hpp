@@ -153,7 +153,7 @@ auto construct_by_types(WorldT& world) {
 
 template <typename WorldT, typename Types, size_t... Idx>
 auto construct_by_types(WorldT& world, std::index_sequence<Idx...>) {
-    return std::make_tuple(construct<type_list_element_t<Idx, Types>>...);
+    return std::make_tuple(construct<list_element_t<Types, Idx>>...);
 }
 
 template <typename T>
@@ -173,7 +173,7 @@ private:
         RegistryT& reg, std::index_sequence<Idx...>) {
         std::invoke(Func, std::forward<Ts>(params)...,
                     internal::template construct<
-                        RegistryT, type_list_element_t<Idx, List>>(reg)...);
+                        RegistryT, list_element_t<List, Idx>>(reg)...);
     }
 
 public:
