@@ -22,7 +22,7 @@ struct mut;
 /**
  * @brief the entity don't has this component
  */
-template <typename>
+template <typename...>
 struct without;
 
 /**
@@ -64,8 +64,8 @@ struct is_without {
     static constexpr bool value = false;
 };
 
-template <typename T>
-struct is_without<without<T>> {
+template <typename... Ts>
+struct is_without<without<Ts...>> {
     static constexpr bool value = true;
 };
 
@@ -93,9 +93,9 @@ struct get_condition_inner_types<type_list<Ts...>> {
     using type = type_list<Ts...>;
 };
 
-template <typename T>
-struct get_condition_inner_types<gecs::without<T>> {
-    using type = type_list<T>;
+template <typename... Ts>
+struct get_condition_inner_types<gecs::without<Ts...>> {
+    using type = type_list<Ts...>;
 };
 
 template <typename... Ts>

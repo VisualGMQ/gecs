@@ -230,8 +230,6 @@ public:
                 }
             }
 
-            auto components = get_storages(entities, typename condition::require_list{});
-
             return querier_type<Types...>{get_storages(entities, typename condition::require_list{}), entities};
         }
     }

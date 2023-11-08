@@ -135,15 +135,10 @@ TEST_CASE("multiple querier") {
         it++;
         REQUIRE(std::get<1>(*it).value == 8);
 
-        // FIXME: make this test pass(now querier.size() == 0)
-        // auto querier2 = reg.query<without<Comp1>>();
-        // REQUIRE(querier2.size() == 1);
-
-        // FIXME: make this test pass
-        // auto querier3 = reg.query<Comp4, without<Comp1>>();
-        // REQUIRE(querier3.size() == 1);
-        // auto it = querier3.begin();
-        // REQUIRE(std::get<1>(*it).b == true);
+        auto querier3 = reg.query<Comp2, without<Comp1, Comp3>>();
+        REQUIRE(querier3.size() == 1);
+        auto it3 = querier3.begin();
+        REQUIRE(std::get<1>(*it3).name == "ent3");
     }
 
     SECTION("`only` query", "[conditional]") {

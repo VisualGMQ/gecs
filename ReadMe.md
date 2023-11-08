@@ -158,12 +158,12 @@ for (auto& [entity, comp1, comp2, comp3] : multi_queirer) {
 
     void update_system(querier<Comp1, only<Comp2, Comp3>>); // 非法！only只能单独存在且只有一个
     ```
-* `without<T>`：要求实体不能拥有此组件，语句中只能有一个`without`并且`without`内只能有一个类型参数(待修复)。语句中必须含有其他的无条件查询类型（待修复）：
+* `without<T>`：要求实体不能拥有此组件，语句中只能有一个`without`，并且语句中必须含有其他的无条件查询类型：
     ```cpp
     void system(querier<Comp1, without<Comp2>>);    //查询所有含有Comp1但不含有Comp2的组件
-    // 以下待修复:
+    void system(querier<Comp1, without<Comp2, Comp3>>); // 查询所有含Comp1，但不含有Comp2和Comp3的组件
+
     void system(querier<without<Comp2>>);   // 非法！必须含有至少一个无查询条件的类型
-    void system(querier<Comp1, without<Comp2, Comp3>>); // 非法！without只能有一个参数
     ```
 
 #### resource
