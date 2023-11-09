@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gecs/config/config.hpp"
+#include <unordered_map>
 
 namespace gecs {
 
@@ -17,12 +18,34 @@ public:
 
     template <typename Type>
     static value_type gen() noexcept {
-        static value_type value = curr_++;
+        value_type value = get_new_id<Type>();
         return value;
+    }
+
+    static value_type typeinfo_id(GECS_TYPE_INFO_TYPE typeinfo) noexcept {
+        if (auto it = typeinfo_map_.find(typeinfo); it != typeinfo_map_.end()) {
+            return it->second;
+        } else {
+            return typeinfo_map_.emplace(typeinfo, curr_++).second;
+        }
     }
 
 private:
     inline static value_type curr_ = {};
+    inline static std::unordered_map<GECS_TYPE_INFO_TYPE, value_type>
+        typeinfo_map_;
+
+    template <typename U>
+    static value_type get_new_id() noexcept {
+        auto typeinfo = GECS_GET_TYPE_INFO(U);
+        if (auto it = typeinfo_map_.find(typeinfo); it != typeinfo_map_.end()) {
+            return it->second;
+        } else {
+            auto id = curr_++;
+            typeinfo_map_.emplace(typeinfo, id);
+            return id;
+        }
+    }
 };
 
 using component_id_generator = basic_id_generator<internal::component_tag>;

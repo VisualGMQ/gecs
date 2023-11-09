@@ -37,12 +37,24 @@ public:
         return reg_->template get<Type>(entity);
     }
 
+    auto commands() const noexcept {
+        return reg_->commands();
+    }
+
     template <typename Type>
     Type& get_mut(entity_type entity) noexcept {
         return reg_->template get_mut<Type>(entity);
     }
 
     auto& entities() const noexcept { return reg_->entities(); }
+
+    const auto& typeinfos() const noexcept {
+        return reg_->typeinfos();
+    }
+
+    const auto& pools() const noexcept {
+        return reg_->pools();
+    }
 
     template <typename T>
     auto res() noexcept {

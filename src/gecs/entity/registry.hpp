@@ -252,6 +252,14 @@ public:
         return resource<T>{};
     }
 
+    const auto& pools() const noexcept {
+        return pools_;
+    }
+
+    const auto& typeinfos() const noexcept {
+        return type_infos_;
+    }
+
     template <typename T>
     event_dispatcher_wrapper_type<T> event_dispatcher() noexcept {
         return event_dispatcher_wrapper_type<T>(assure_dispatcher<T>());
