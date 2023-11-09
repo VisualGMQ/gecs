@@ -154,4 +154,10 @@ TEST_CASE("multiple querier") {
         REQUIRE(querier2.size() == 1);
         REQUIRE(std::get<1>(*querier2.begin()).value == 2);
     }
+
+    SECTION("mutable query") {
+        auto querier = reg.query<mut<Comp1>, mut<Comp2>>();
+
+        REQUIRE(querier.size() == 1);
+    }
 }

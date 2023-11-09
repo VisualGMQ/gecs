@@ -212,10 +212,10 @@ public:
         } else {
             typename pool_base_type::packed_container_type entities;
 
-            std::array indices = get_component_ids(typename condition::require_list{});
+            std::array indices = get_component_ids(list_foreach_t<typename condition::require_list, internal::remove_mut>{});
 
             std::optional<size_t> idx =
-                minimal_idx<typename condition::require_list>(
+                minimal_idx(
                     pools_, indices);
 
             if (!idx) {
@@ -487,14 +487,14 @@ private:
     system_container_type shutdown_systems_;
     event_dispatcher_container event_dispatchers_;
 
-    template <typename List>
+    template <size_t N>
     std::optional<size_t> minimal_idx(pool_container_reference& pools,
-                       const std::array<size_t, List::size>& indices) {
+                       const std::array<size_t, N>& indices) {
         size_t minimal = std::numeric_limits<size_t>::max();
         size_t min_idx = 0;
 
         for (auto idx : indices) {
-            if (idx >= pools.size()) {
+            if (idx >= pools.size() || !pools[idx]) {
                 return std::nullopt;
             }
             minimal =

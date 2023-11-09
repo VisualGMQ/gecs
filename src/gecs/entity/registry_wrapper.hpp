@@ -32,6 +32,16 @@ public:
         return reg_->get_mut(entity, type_info);
     }
 
+    template <typename Type>
+    const Type& get(entity_type entity) const noexcept {
+        return reg_->template get<Type>(entity);
+    }
+
+    template <typename Type>
+    Type& get_mut(entity_type entity) noexcept {
+        return reg_->template get_mut<Type>(entity);
+    }
+
     auto& entities() const noexcept { return reg_->entities(); }
 
     template <typename T>
