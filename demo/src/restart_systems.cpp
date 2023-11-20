@@ -15,7 +15,7 @@ void OnEnterRestart(gecs::commands cmds, gecs::resource<TextureManager> ts_mgr, 
 }
 
 void OnExitRestart(gecs::commands cmds, gecs::querier<RestartScene> querier, gecs::event_dispatcher<SDL_KeyboardEvent> keyboard) {
-    for (auto& [ent, _] : querier) {
+    for (auto&& [ent, _] : querier) {
         cmds.destroy(ent);
     }
     keyboard.sink().remove<change_state>();

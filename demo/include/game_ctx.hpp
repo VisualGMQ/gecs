@@ -6,7 +6,7 @@
 
 struct BulletCreator final {
     gecs::entity operator()(gecs::commands cmds) const {
-        auto entity = cmds.create();
+        return cmds.create();
     }
 };
 

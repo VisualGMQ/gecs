@@ -49,12 +49,12 @@ void CollideHandle(gecs::commands cmds,
     std::vector<std::pair<Vector2, gecs::entity>> entities1;
     std::vector<gecs::entity> entities2;
 
-    for (auto& [ent1, _, body1, sprite1] : querier1) {
+    for (auto&& [ent1, _, body1, sprite1] : querier1) {
         gecs::entity entity = gecs::null_entity;
         Rect entity1_rect(body1.collide.position + sprite1.position,
                           body1.collide.size);
 
-        for (auto& [ent2, _, body2, sprite2] : querier2) {
+        for (auto&& [ent2, _, body2, sprite2] : querier2) {
             if (!cmds.alive(ent2)) {
                 break;
             }
@@ -80,7 +80,7 @@ void CollideHandle(gecs::commands cmds,
 
     bool is_game_over = false;
 
-    for (auto [pos, ent] : entities1) {
+    for (auto&& [pos, ent] : entities1) {
         cmds.destroy(ent);
         auto& body = CreateBombAnim(pos, FallingStoneVel, cmds, anim_mgr);
         if constexpr (std::is_same_v<T2, Land>) {

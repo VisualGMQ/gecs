@@ -202,6 +202,25 @@ void system(commands cmds) {
 }
 ```
 
+有些组件必须一起创建才能正常工作，而`Bundle`可以一次性创建多个组件以防遗忘：
+`Bundle`不是一个具体类，而是用户自定义的POD类。类中的所有成员变量会被作为component附加在entity上：
+
+```cpp
+struct Comp1 {};
+struct Comp2 {};
+
+// 定义一个bundle
+struct CompBundle {
+    Comp1 comp1;
+    Comp2 comp2;
+};
+
+// in main():
+cmds.emplace_bundle<CompBundle>(entity, CompBundle{...});
+```
+
+创建之后`entity`将会拥有`Comp1`和`Comp2`两个组件。
+
 ### signal系统
 
 signal类似于Qt的信号槽或Godot的signal。用于更好地实现观察者模式。

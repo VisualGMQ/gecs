@@ -2,7 +2,7 @@
 
 constexpr auto to_gaming_state = +[](const SDL_KeyboardEvent& keyboard, gecs::commands cmds, gecs::querier<WelcomeScene> querier) {
     if (keyboard.type == SDL_KEYDOWN) {
-        for (auto& [ent, _] : querier) {
+        for (auto&& [ent, _] : querier) {
             cmds.destroy(ent);
         }
 

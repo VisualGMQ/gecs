@@ -1,4 +1,5 @@
 #include "gaming_systems.hpp"
+#include <random>
 
 void OnEnterGaming(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr,
                    gecs::resource<TextureManager> ts_mgr,
@@ -58,7 +59,7 @@ void OnEnterGaming(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr,
 
 void RemoveBullet(gecs::commands cmds, gecs::querier<Bullet, Sprite> querier,
                   gecs::resource<gecs::mut<GameContext>> ctx) {
-    for (auto& [entity, bullet, sprite] : querier) {
+    for (auto&& [entity, bullet, sprite] : querier) {
         if (sprite.position.y + 32 < 0 || sprite.position.y >= CanvaSize.h) {
             cmds.destroy(entity);
         }
@@ -68,7 +69,7 @@ void RemoveBullet(gecs::commands cmds, gecs::querier<Bullet, Sprite> querier,
 void RenderCollideBox(gecs::resource<gecs::mut<GameContext>> ctx,
                       gecs::querier<Sprite, RigidBody> querier) {
     if (ctx->debugMode) {
-        for (auto& [_, sprite, body] : querier) {
+        for (auto&& [_, sprite, body] : querier) {
             ctx->renderer->SetColor({0, 255, 0, 255});
             ctx->renderer->DrawRect(Rect{
                 sprite.position + body.collide.position, body.collide.size});
@@ -78,7 +79,7 @@ void RenderCollideBox(gecs::resource<gecs::mut<GameContext>> ctx,
 
 void RemoveFinishedBombAnim(gecs::commands cmds,
                             gecs::querier<Bomb, Animation> querier) {
-    for (auto& [ent, _, anim] : querier) {
+    for (auto&& [ent, _, anim] : querier) {
         if (anim.IsFinish()) {
             cmds.destroy(ent);
         }
@@ -91,8 +92,9 @@ void FallingStoneGenerate(gecs::commands cmds,
                           gecs::resource<gecs::mut<GameContext>> ctx) {
     ctx->stone_falling_ticker.Update();
     if (ctx->stone_falling_ticker.isFinish()) {
-        float x = std::uniform_int_distribution<int>(
-            50, CanvaSize.w - 50)(std::random_device());
+        auto dist = std::uniform_int_distribution<int>(50, CanvaSize.w - 50);
+        auto d = std::random_device();
+        float x = dist(d);
 
         CreateFallingStone(Vector2(x, -100), FallingStoneVel, cmds, anim_mgr);
         ctx->stone_falling_ticker.Reset();
@@ -101,7 +103,7 @@ void FallingStoneGenerate(gecs::commands cmds,
 
 void MoveTank(
     gecs::querier<Tank, gecs::mut<Sprite>, gecs::mut<RigidBody>> querier) {
-    for (auto& [_, tank, sprite, rigidbody] : querier) {
+    for (auto&& [_, tank, sprite, rigidbody] : querier) {
         if (SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_A]) {
             rigidbody.velocity = Vector2{-TankSpeed, 0};
         } else if (SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_D]) {
@@ -117,7 +119,7 @@ void MoveTank(
 void ShootBullet(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr,
                  gecs::querier<Tank, Sprite, gecs::mut<Ticker>> querier,
                  gecs::resource<gecs::mut<GameContext>> ctx) {
-    for (auto& [_, tank, sprite, ticker] : querier) {
+    for (auto&& [_, tank, sprite, ticker] : querier) {
         if (ticker.isFinish() &&
             SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_J]) {
             auto entity = CreateBullet(sprite.position - Vector2(0, 16),
@@ -130,7 +132,7 @@ void ShootBullet(gecs::commands cmds, gecs::resource<AnimManager> anim_mgr,
 
 void PlayAnimByVel(
     gecs::querier<Tank, gecs::mut<Animation>, RigidBody> querier) {
-    for (auto& [_, tank, anim, body] : querier) {
+    for (auto&& [_, tank, anim, body] : querier) {
         if (body.velocity.x == 0) {
             anim.Stop();
         } else {
@@ -150,20 +152,20 @@ void UpdateScoreImage(gecs::resource<GameContext> ctx,
     uint32_t tens = ctx->score / 10;
     auto it = scores.begin();
     {
-        auto& [_, score, sprite] = *it;
+        auto&& [_, score, sprite] = *it;
         if (tens != 0) {
             sprite.image = ts_mgr->FindTilesheet("numbers")->Get(tens, 0);
         }
     }
     it ++;
     {
-        auto& [_, score, sprite] = *it;
+        auto&& [_, score, sprite] = *it;
         sprite.image = ts_mgr->FindTilesheet("numbers")->Get(units, 0);
     }
 }
 
 void OnExitGaming(gecs::commands cmds, gecs::querier<GamingScene> querier) {
-    for (auto& [ent, _] : querier) {
+    for (auto&& [ent, _] : querier) {
         cmds.destroy(ent);
     }
 }

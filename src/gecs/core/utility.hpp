@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -71,5 +72,97 @@ constexpr std::index_sequence<N + Seq...> add(std::index_sequence<Seq...>) {
 template <std::size_t Min, std::size_t Max>
 using make_index_range =
     decltype(add<Min>(std::make_index_sequence<Max - Min>()));
+
+namespace internal {
+
+// a way to extract members of POD into tuple
+// reference:
+// https://www.reddit.com/r/cpp/comments/4yp7fv/c17_structured_bindings_convert_struct_to_a_tuple/
+
+struct any_type {
+    template <typename T>
+    constexpr operator T();
+};
+
+// reference:
+// https://stackoverflow.com/questions/20885541/is-braces-constructible-type-trait
+template <typename T, typename... Ts>
+decltype(void(T{std::declval<Ts>()...}), std::true_type())
+is_braces_constructible_impl(int);
+
+template <typename T, typename... Ts>
+std::false_type is_braces_constructible_impl(...);
+
+template <typename T, typename... Ts>
+struct is_braces_constructible
+    : decltype(is_braces_constructible_impl<T, Ts...>(0)) {};
+
+}  // namespace internal
+
+template <typename T, typename... Ts>
+constexpr bool is_braces_constructible_v =
+    internal::is_braces_constructible<T, Ts...>::value;
+
+template <typename T>
+auto extrac_pod_members(T&& obj) {
+    using type = std::decay_t<T>;
+    using t = internal::any_type;
+
+    if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t, t, t,
+                                            t>) {
+        auto&& [p1, p2, p3, p4, p5, p6, p7, p8, p10] = obj;
+        return std::make_tuple(p1, p2, p3, p4, p5, p6, p7, p8, p10);
+    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t, t,
+                                                   t>) {
+        auto&& [p1, p2, p3, p4, p5, p6, p7, p8, p9] = obj;
+        return std::make_tuple(p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t,
+                                                   t>) {
+        auto&& [p1, p2, p3, p4, p5, p6, p7, p8] = obj;
+        return std::make_tuple(p1, p2, p3, p4, p5, p6, p7, p8);
+    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t>) {
+        auto&& [p1, p2, p3, p4, p5, p6, p7] = obj;
+        return std::make_tuple(p1, p2, p3, p4, p5, p6, p7);
+    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t>) {
+        auto&& [p1, p2, p3, p4, p5, p6] = obj;
+        return std::make_tuple(p1, p2, p3, p4, p5, p6);
+    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t>) {
+        auto&& [p1, p2, p3, p4, p5] = obj;
+        return std::make_tuple(p1, p2, p3, p4, p5);
+    } else if constexpr (is_braces_constructible_v<type, t, t, t, t>) {
+        auto&& [p1, p2, p3, p4] = obj;
+        return std::make_tuple(p1, p2, p3, p4);
+    } else if constexpr (is_braces_constructible_v<type, t, t, t>) {
+        auto&& [p1, p2, p3] = obj;
+        return std::make_tuple(p1, p2, p3);
+    } else if constexpr (is_braces_constructible_v<type, t, t>) {
+        auto&& [p1, p2] = obj;
+        return std::make_tuple(p1, p2);
+    } else if constexpr (is_braces_constructible_v<type, t>) {
+        auto&& [p1] = obj;
+        return std::make_tuple(p1);
+    } else {
+        GECS_ASSERT(
+            false,
+            "member number in POD > 10! Please reduce members or split them");
+        return std::make_tuple();
+    }
+}
+
+namespace internal {
+
+template <typename Tuple, typename F, std::size_t... Indices>
+void do_tuple_foreach(Tuple&& t, F&& f, std::index_sequence<Indices...>) {
+    (f(std::get<Indices>(t)), ...);
+}
+
+}  // namespace internal
+
+template <typename Tuple, typename F>
+void tuple_foreach(Tuple&& t, F&& f) {
+    internal::do_tuple_foreach(
+        std::forward<Tuple>(t), std::forward<F>(f),
+        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
+}
 
 }  // namespace gecs

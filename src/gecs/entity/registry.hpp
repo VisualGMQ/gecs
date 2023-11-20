@@ -12,7 +12,6 @@
 #include "gecs/entity/storage.hpp"
 #include "gecs/entity/system_constructor.hpp"
 
-#include <algorithm>
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -258,6 +257,16 @@ public:
 
     const auto& typeinfos() const noexcept {
         return type_infos_;
+    }
+    
+    template <typename T>
+    void emplace_bundle(entity_type entity, T&& bundle) {
+        auto members = extrac_pod_members(std::forward<T>(bundle));
+
+        tuple_foreach(members, [&](auto&& elem) {
+            using type = std::decay_t<decltype(elem)>;
+            this->emplace<type>(entity, elem);
+        });
     }
 
     template <typename T>
