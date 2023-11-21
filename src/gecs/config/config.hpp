@@ -45,8 +45,12 @@ struct fake_reference_any final {
 
 }
 
-#ifndef GECS_REFERENCE_ANY
-#define GECS_REFERENCE_ANY ::gecs::internal::fake_reference_any
+#ifndef GECS_ANY
+#define GECS_ANY ::gecs::internal::fake_reference_any
+#endif
+
+#ifndef GECS_MAKE_ANY_REF
+#define GECS_MAKE_ANY_REF(x)  ::gecs::internal::fake_reference_any(x)
 #endif
 
 namespace gecs {

@@ -120,7 +120,7 @@ public:
         return static_cast<storage_for_t<Type>&>(*pools_[id])[entity];
     }
 
-    GECS_REFERENCE_ANY get_mut(EntityT entity, const config::type_info& type_info) noexcept {
+    GECS_ANY get_mut(EntityT entity, const config::type_info& type_info) noexcept {
         for (auto& info : type_infos_) {
             if (info.type_info == type_info) {
                 return info.convert_to_any(*this, entity);
@@ -481,12 +481,12 @@ private:
 
     struct TypeInfo final {
         config::type_info type_info;
-        GECS_REFERENCE_ANY (*convert_to_any)(self_type&, entity_type);
+        GECS_ANY (*convert_to_any)(self_type&, entity_type);
 
         template <typename T>
-        static GECS_REFERENCE_ANY convert_type_to_any(self_type& reg,
+        static GECS_ANY convert_type_to_any(self_type& reg,
                                                       entity_type entity) {
-            auto ref = GECS_REFERENCE_ANY{reg.get_mut<T>(entity)};
+            auto ref = GECS_MAKE_ANY_REF(reg.get_mut<T>(entity));
             return ref;
         }
     };

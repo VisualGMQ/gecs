@@ -22,7 +22,7 @@ public:
         return value;
     }
 
-    static value_type typeinfo_id(GECS_TYPE_INFO_TYPE typeinfo) noexcept {
+    static value_type typeinfo_id(config::type_info typeinfo) noexcept {
         if (auto it = typeinfo_map_.find(typeinfo); it != typeinfo_map_.end()) {
             return it->second;
         } else {
@@ -32,17 +32,17 @@ public:
 
 private:
     inline static value_type curr_ = {};
-    inline static std::unordered_map<GECS_TYPE_INFO_TYPE, value_type>
+    inline static std::unordered_map<config::type_info, value_type>
         typeinfo_map_;
 
     template <typename U>
     static value_type get_new_id() noexcept {
-        auto typeinfo = GECS_GET_TYPE_INFO(U);
-        if (auto it = typeinfo_map_.find(typeinfo); it != typeinfo_map_.end()) {
+        config::type_info type = GECS_GET_TYPE_INFO(U);
+        if (auto it = typeinfo_map_.find(type); it != typeinfo_map_.end()) {
             return it->second;
         } else {
             auto id = curr_++;
-            typeinfo_map_.emplace(typeinfo, id);
+            typeinfo_map_.emplace(type, id);
             return id;
         }
     }
