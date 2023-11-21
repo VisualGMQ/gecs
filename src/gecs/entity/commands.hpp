@@ -36,7 +36,7 @@ public:
 
     template <typename T>
     void emplace_bundle(entity_type entity, T&& bundle) {
-        reg_->template emplace_bundle(entity, std::forward<T>(bundle));
+        reg_->emplace_bundle(entity, std::forward<T>(bundle));
     }
 
     auto& destroy(entity_type entity) noexcept {
