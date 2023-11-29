@@ -179,7 +179,7 @@ struct check_satisfied_one {
         using type = remove_mut_t<T>;
         size_t idx = component_id_generator::gen<type>();
 
-        return idx < pools.size() && pools[idx]->contain(entity);
+        return idx < pools.size() && pools[idx] && pools[idx]->contain(entity);
     }
 };
 
@@ -189,7 +189,7 @@ struct check_without_satisfied_one {
         using type = remove_mut_t<T>;
         size_t idx = component_id_generator::gen<type>();
 
-        return idx >= pools.size() || !pools[idx]->contain(entity);
+        return idx >= pools.size() || !pools[idx] || !pools[idx]->contain(entity);
     }
 };
 

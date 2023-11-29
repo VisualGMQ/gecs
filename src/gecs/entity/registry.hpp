@@ -142,7 +142,10 @@ public:
     void remove(EntityT entity, const config::type_info& type_info) noexcept {
         for (int i = 0; i < type_infos_.size(); i++) {
             if (type_infos_[i].type_info == type_info) {
-                pools_[i]->remove(entity);
+                if (pools_[i]) {
+                    pools_[i]->remove(entity);
+                }
+                break;
             }
         }
     }
@@ -153,7 +156,7 @@ public:
         if (id >= pools_.size()) {
             return false;
         } else {
-            return pools_[id]->contain(entity);
+            return pools_[id] && pools_[id]->contain(entity);
         }
     }
 
@@ -169,12 +172,12 @@ public:
             return false;
         }
 
-        return pools_[id]->contain(entity);
+        return pools_[id] && pools_[id]->contain(entity);
     }
 
     bool has(entity_type entity, const config::type_info& type_info) const noexcept {
         for (int i = 0; i < pools_.size(); i++) {
-            if (pools_[i]->contain(entity) &&
+            if (pools_[i] && pools_[i]->contain(entity) &&
                 type_infos_[i].type_info == type_info) {
                 return true;
             }
