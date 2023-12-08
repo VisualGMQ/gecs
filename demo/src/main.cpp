@@ -1,9 +1,10 @@
+#include "common_systems.hpp"
 #include "defs.hpp"
 #include "game_ctx.hpp"
 #include "gaming_systems.hpp"
-#include "common_systems.hpp"
-#include "welcome_systems.hpp"
 #include "restart_systems.hpp"
+#include "welcome_systems.hpp"
+
 
 // startup system to init SDL and resources
 void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit,
@@ -44,7 +45,8 @@ void Startup(gecs::commands cmds, gecs::event_dispatcher<SDL_QuitEvent> quit,
         "falling_stone", "demo/resources/falling_stone.bmp", KeyColor, 2, 1);
     auto& bomb_ts =
         ts_mgr.LoadTilesheet("bomb", "demo/resources/bomb.bmp", KeyColor, 6, 1);
-    ts_mgr.LoadTilesheet("numbers", "demo/resources/numbers.bmp", KeyColor, 10, 1);
+    ts_mgr.LoadTilesheet("numbers", "demo/resources/numbers.bmp", KeyColor, 10,
+                         1);
     anim_mgr
         .Create("shell_fly",
                 {Frame(shell_ts.Get(0, 0), 3), Frame(shell_ts.Get(1, 0), 3)})
@@ -103,45 +105,57 @@ int main(int argc, char** argv) {
     // regist all systems
     // startup system
     gaming_world.regist_registry("gaming")
-        .regist_startup_system<Startup>()
+        .regist_startup_system<Startup>("startup")
         // shutdown system
-        .regist_shutdown_system<Shutdown>()
+        .regist_shutdown_system<Shutdown>("shutdown")
         // update systems
         // all state system
-        .regist_update_system<EventDispatcher>()
-        .regist_update_system<UpdateTicker>()
-        .regist_update_system<UpdateAnim>()
-        .regist_update_system<UpdateAnimToImage>()
-        .regist_update_system<UpdateRigidbody>()
-        .regist_update_system<RenderSprite>()
-        .regist_update_system<RenderUpdate>()
+        .regist_update_system<EventDispatcher>("event dispatcher")
+        .regist_update_system<UpdateTicker>("update ticker")
+        .regist_update_system<UpdateAnim>("update anim")
+        .regist_update_system<UpdateAnimToImage>("update anim to image")
+        .regist_update_system<UpdateRigidbody>("update rigidbody")
+        .regist_update_system<RenderSprite>("render sprite")
+        .regist_update_system<RenderUpdate>("render update")
         // welcome state
         .add_state(GameState::Welcome)
-        .regist_enter_system_to_state<OnEnterWelcome>(GameState::Welcome)
-        .regist_exit_system_to_state<OnExitWelcome>(GameState::Welcome)
+        .regist_enter_system_to_state<OnEnterWelcome>(GameState::Welcome,
+                                                      "enter welcome")
+        .regist_exit_system_to_state<OnExitWelcome>(GameState::Welcome,
+                                                    "exit welcome")
         // gaming state
         .add_state(GameState::Gaming)
-        .regist_enter_system_to_state<OnEnterGaming>(GameState::Gaming)
-        .regist_update_system_to_state<FallingStoneGenerate>(GameState::Gaming)
-        .regist_update_system_to_state<MoveTank>(GameState::Gaming)
-        .regist_update_system_to_state<ShootBullet>(GameState::Gaming)
-        .regist_update_system_to_state<PlayAnimByVel>(GameState::Gaming)
-        .regist_update_system_to_state<RenderCollideBox>(GameState::Gaming)
-        .regist_update_system_to_state<RemoveBullet>(GameState::Gaming)
+        .regist_enter_system_to_state<OnEnterGaming>(GameState::Gaming,
+                                                     "enter gaming")
+        .regist_update_system_to_state<FallingStoneGenerate>(
+            GameState::Gaming, "falling stone generate")
+        .regist_update_system_to_state<MoveTank>(GameState::Gaming, "move tank")
+        .regist_update_system_to_state<ShootBullet>(GameState::Gaming,
+                                                    "shoot bullet")
+        .regist_update_system_to_state<PlayAnimByVel>(GameState::Gaming,
+                                                      "play anim by vel")
+        .regist_update_system_to_state<RenderCollideBox>(GameState::Gaming,
+                                                         "render collide box")
+        .regist_update_system_to_state<RemoveBullet>(GameState::Gaming,
+                                                     "remove bullet")
         .regist_update_system_to_state<RemoveFinishedBombAnim>(
-            GameState::Gaming)
+            GameState::Gaming, "remove finished bomb anim")
         .regist_update_system_to_state<CollideHandle<FallingStone, Bullet>>(
-            GameState::Gaming)
+            GameState::Gaming, "bullet collide handle")
         .regist_update_system_to_state<CollideHandle<FallingStone, Tank>>(
-            GameState::Gaming)
+            GameState::Gaming, "tank collide handle")
         .regist_update_system_to_state<CollideHandle<FallingStone, Land>>(
-            GameState::Gaming)
-        .regist_update_system_to_state<UpdateScoreImage>(GameState::Gaming)
-        .regist_exit_system_to_state<OnExitGaming>(GameState::Gaming)
+            GameState::Gaming, "land collide handle")
+        .regist_update_system_to_state<UpdateScoreImage>(GameState::Gaming,
+                                                         "update score image")
+        .regist_exit_system_to_state<OnExitGaming>(GameState::Gaming,
+                                                   "on exit gaming")
         // restart state
         .add_state(GameState::Restart)
-        .regist_enter_system_to_state<OnEnterRestart>(GameState::Restart)
-        .regist_exit_system_to_state<OnExitRestart>(GameState::Restart)
+        .regist_enter_system_to_state<OnEnterRestart>(GameState::Restart,
+                                                      "enter restart")
+        .regist_exit_system_to_state<OnExitRestart>(GameState::Restart,
+                                                    "exit restart")
         // start state
         .start_with_state(GameState::Welcome);
 

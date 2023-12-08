@@ -20,6 +20,17 @@ struct CompBundle {
     Comp2 comp2;
 };
 
+int count1 = 0;
+int count2 = 0;
+
+void System1() {
+    count1 ++;
+}
+
+void System2() {
+    count2 ++;
+}
+
 TEST_CASE("commands") {
     w.regist_registry("gaming");
     w.startup();
@@ -60,5 +71,21 @@ TEST_CASE("commands") {
         REQUIRE(reg.has<Comp2>(ent));
         REQUIRE(reg.get<Comp1>(ent).value == 123);
         REQUIRE(reg.get<Comp2>(ent).value == 54);
+    }
+
+    SECTION("create/remove system") {
+        reg.regist_update_system<System1>("system1");
+        reg.regist_update_system<System2>("system2");
+
+        w.update();
+
+        REQUIRE(count1 == 1);
+        REQUIRE(count2 == 1);
+
+        reg.remove_update_system("system1");
+
+        w.update();
+        REQUIRE(count1 == 1);
+        REQUIRE(count2 == 2);
     }
 }

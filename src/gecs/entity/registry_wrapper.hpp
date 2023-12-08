@@ -24,11 +24,13 @@ public:
         return reg_->template has<T>(entity);
     }
 
-    bool has(entity_type entity, const config::type_info& type_info) const noexcept {
+    bool has(entity_type entity,
+             const config::type_info& type_info) const noexcept {
         return reg_->has(entity, type_info);
     }
 
-    GECS_ANY get_mut(entity_type entity, const config::type_info& type_info) noexcept {
+    GECS_ANY get_mut(entity_type entity,
+                     const config::type_info& type_info) noexcept {
         return reg_->get_mut(entity, type_info);
     }
 
@@ -37,9 +39,7 @@ public:
         return reg_->template get<Type>(entity);
     }
 
-    auto commands() const noexcept {
-        return reg_->commands();
-    }
+    auto commands() const noexcept { return reg_->commands(); }
 
     template <typename Type>
     Type& get_mut(entity_type entity) noexcept {
@@ -48,17 +48,79 @@ public:
 
     auto& entities() const noexcept { return reg_->entities(); }
 
-    const auto& typeinfos() const noexcept {
-        return reg_->typeinfos();
-    }
+    const auto& typeinfos() const noexcept { return reg_->typeinfos(); }
 
-    const auto& pools() const noexcept {
-        return reg_->pools();
-    }
+    const auto& pools() const noexcept { return reg_->pools(); }
 
     template <typename T>
     auto res() noexcept {
         return reg_->template res<T>();
+    }
+
+    template <auto System>
+    void regist_startup_system(const std::string& name) {
+        reg_->template regist_startup_system<System>(name);
+    }
+
+    template <auto System>
+    void regist_update_system(const std::string& name) {
+        reg_->template regist_update_system<System>(name);
+    }
+
+    template <auto System>
+    void regist_shutdown_system(const std::string& name) {
+        reg_->template regist_shutdown_system<System>(name);
+    }
+
+    template <auto System>
+    void remove_startup_system(const std::string& name) {
+        reg_->template remove_startup_system<System>(name);
+    }
+
+    template <auto System>
+    void remove_update_system(const std::string& name) {
+        reg_->template remove_update_system<System>(name);
+    }
+
+    template <auto System>
+    void remove_shutdown_system(const std::string& name) {
+        reg_->template remove_shutdown_system<System>(name);
+    }
+
+    template <auto System, typename T>
+    auto& regist_enter_system_to_state(T value,
+                                       const std::string& name) noexcept {
+        reg_->template regist_enter_system_to_state<System>(value, name);
+    }
+
+    template <auto System, typename T>
+    auto& regist_update_system_to_state(T value,
+                                        const std::string& name) noexcept {
+        reg_->template regist_update_system_to_state<System>(value, name);
+    }
+
+    template <auto System, typename T>
+    auto& regist_exit_system_to_state(T value,
+                                      const std::string& name) noexcept {
+        reg_->template regist_exit_system_to_state<System>(value, name);
+    }
+
+    template <auto System, typename T>
+    auto& remove_exit_system_to_state(T value,
+                                      const std::string& name) noexcept {
+        reg_->template remove_exit_system_to_state<System>(value, name);
+    }
+
+    template <auto System, typename T>
+    auto& remove_update_system_to_state(T value,
+                                        const std::string& name) noexcept {
+        reg_->template remove_update_system_to_state<System>(value, name);
+    }
+
+    template <auto System, typename T>
+    auto& remove_enter_system_to_state(T value,
+                                       const std::string& name) noexcept {
+        reg_->template remove_enter_system_to_state<System>(value, name);
     }
 
 private:
