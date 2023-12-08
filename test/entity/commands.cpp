@@ -74,15 +74,15 @@ TEST_CASE("commands") {
     }
 
     SECTION("create/remove system") {
-        reg.regist_update_system<System1>("system1");
-        reg.regist_update_system<System2>("system2");
+        reg.regist_update_system<System1>();
+        reg.regist_update_system<System2>();
 
         w.update();
 
         REQUIRE(count1 == 1);
         REQUIRE(count2 == 1);
 
-        reg.remove_update_system("system1");
+        reg.remove_update_system<System1>();
 
         w.update();
         REQUIRE(count1 == 1);

@@ -79,14 +79,17 @@ gecs::world world;
 // 创建world
 gecs::world world;
 
+// 声明一个registry
+auto& reg = gaming_world.regist_registry("gaming");
+
 // 注册startup system
-world.regist_starup_system<your_startup_system1>();
-world.regist_starup_system<your_startup_system2>();
+reg.regist_starup_system<your_startup_system1>();
+reg.regist_starup_system<your_startup_system2>();
 ...
 
 // 注册update system 
-world.regist_update_system<your_update_system1>();
-world.regist_update_system<your_update_system2>();
+reg.regist_update_system<your_update_system1>();
+reg.regist_update_system<your_update_system2>();
 ...
 
 // 启动ECS
@@ -96,7 +99,17 @@ world.startup();
 while (shouldClose()) {
     world.update();
 }
+
+// 结束ECS
+// 也可以不调用，world析构时会自动调用
+world.shutdown();   
 ```
+
+`world`是由多个`registry`组成的。`registry`中存储着有关的entity,component,system。只有`resource`是在各个`registry`间是通用的。
+
+使用`world.regist_registry(name)`注册一个`registry`。然后可以将系统注册在此`registry`上。
+
+一般来说你不会使用超过一个的`registry`。
 
 ### system
 
@@ -220,6 +233,94 @@ cmds.emplace_bundle<CompBundle>(entity, CompBundle{...});
 ```
 
 创建之后`entity`将会拥有`Comp1`和`Comp2`两个组件。
+
+### registry
+
+`registry`是当前world中的registry类型，保存着和此registry有关的所有entity,component,system的信息。并且可以对其进行任意操作。
+**不到万不得已不推荐使用此**类型。
+
+要想使用可以在`system`中通过`gecs::registry`得到，多个`registry`底层是同一个（当前`registry`）
+
+```cpp
+void system(gecs::registry reg);
+```
+
+### state
+
+`state`用于切换`registry`中的状态。每个`state`都存储着一系列的system。通过切换`state`可以快速在同一个`registry`中切换不同的功能。
+
+使用`registry.add_state(numeric)`来创建一个`state`。`state`由整数或者枚举表示（推荐枚举）：
+
+```cpp
+enum class States {
+    State1,
+    State2,
+};
+
+registry.add_state(States::State1);
+```
+
+使用如下方法向`state`中添加一个系统：
+
+```cpp
+// 添加一个开始系统
+registry.regist_enter_system_to_state<OnEnterWelcome>(GameState::Welcome)
+    // 添加一个退出系统
+    .regist_exit_system_to_state<OnExitWelcome>(GameState::Welcome)
+    // 添加一个更新系统
+    .regist_update_system_to_state<FallingStoneGenerate>(GameState::Welcome);
+```
+
+每次切换`state`的时候，都会调用当前`state`的所有exit system，并调用新`state`的所有enter system。切换`state`使用：
+
+```cpp
+registry.switch_state_immediatly(state);
+registry.switch_state(state);
+```
+
+来切换`state`。`switch_state()`会延迟到这一帧结束时切换。
+
+`state`的系统和`registry`中的系统执行顺序如下：
+
+```cpp
+registry::startup
+        |
+  state::enter
+        |
+        |<--------------
+        |              |
+registry::update       |
+        |          game loop
+  state::update        |
+        |              |
+        |--------------|
+        |
+   state::exit
+        |
+registry::shutdown
+```
+
+### 系统的增加和删除
+
+使用`registry`可以直接增加/删除系统:
+
+```cpp
+// 为registry增加/删除系统
+registry.regist_startup_system<Sys>();
+registry.remove_startup_system<Sys>();
+
+// 为state增加/删除系统
+registry.regist_enter_system_to_state<Sys>(State::State1);
+registry.remove_enter_system_to_state<Sys>(State::State1);
+```
+
+注意：**为`registry`增加/删除的系统会立刻应用上，而为`state`增加/删除的系统会在`world.update()`末尾附加上。**
+
+这意味着在某个startup系统中，可以为`registry`的startup系统增加新系统，增加的系统在之后会被执行。而若在`state`的某个enter system中新增另一个enter system，则毫无意义，因为新增的system会在`state`的所有enter system调用完毕后再附加在`state`上。除非你从另一个`state`切换到这个`state`，这样此`state`会再次调用所有的enter system（包括后附加的）。
+
+exit system同理。
+
+目前暂不支持在system中提供增加/删除registry system的方法，因为这样做会导致system混乱。原则上来说，registry的system只能在ECS启动前完成全部初始化。但是可以在运行时改变`state`的system（通过`registry`）。
 
 ### signal系统
 

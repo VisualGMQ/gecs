@@ -49,10 +49,10 @@ TEST_CASE("gecs") {
     auto& reg = world.regist_registry("reg");
 
     reg.on_construct<Name>().add(d);
-    reg.regist_startup_system<f>("f");
+    reg.regist_startup_system<f>();
 
     // use normal function
-    reg.regist_update_system<update_system>("update_system");
+    reg.regist_update_system<update_system>();
 
     reg.startup();
     reg.update();

@@ -105,57 +105,46 @@ int main(int argc, char** argv) {
     // regist all systems
     // startup system
     gaming_world.regist_registry("gaming")
-        .regist_startup_system<Startup>("startup")
+        .regist_startup_system<Startup>()
         // shutdown system
-        .regist_shutdown_system<Shutdown>("shutdown")
+        .regist_shutdown_system<Shutdown>()
         // update systems
         // all state system
-        .regist_update_system<EventDispatcher>("event dispatcher")
-        .regist_update_system<UpdateTicker>("update ticker")
-        .regist_update_system<UpdateAnim>("update anim")
-        .regist_update_system<UpdateAnimToImage>("update anim to image")
-        .regist_update_system<UpdateRigidbody>("update rigidbody")
-        .regist_update_system<RenderSprite>("render sprite")
-        .regist_update_system<RenderUpdate>("render update")
+        .regist_update_system<EventDispatcher>()
+        .regist_update_system<UpdateTicker>()
+        .regist_update_system<UpdateAnim>()
+        .regist_update_system<UpdateAnimToImage>()
+        .regist_update_system<UpdateRigidbody>()
+        .regist_update_system<RenderSprite>()
+        .regist_update_system<RenderUpdate>()
         // welcome state
         .add_state(GameState::Welcome)
-        .regist_enter_system_to_state<OnEnterWelcome>(GameState::Welcome,
-                                                      "enter welcome")
-        .regist_exit_system_to_state<OnExitWelcome>(GameState::Welcome,
-                                                    "exit welcome")
+        .regist_enter_system_to_state<OnEnterWelcome>(GameState::Welcome)
+        .regist_exit_system_to_state<OnExitWelcome>(GameState::Welcome)
         // gaming state
         .add_state(GameState::Gaming)
-        .regist_enter_system_to_state<OnEnterGaming>(GameState::Gaming,
-                                                     "enter gaming")
+        .regist_enter_system_to_state<OnEnterGaming>(GameState::Gaming)
         .regist_update_system_to_state<FallingStoneGenerate>(
-            GameState::Gaming, "falling stone generate")
-        .regist_update_system_to_state<MoveTank>(GameState::Gaming, "move tank")
-        .regist_update_system_to_state<ShootBullet>(GameState::Gaming,
-                                                    "shoot bullet")
-        .regist_update_system_to_state<PlayAnimByVel>(GameState::Gaming,
-                                                      "play anim by vel")
-        .regist_update_system_to_state<RenderCollideBox>(GameState::Gaming,
-                                                         "render collide box")
-        .regist_update_system_to_state<RemoveBullet>(GameState::Gaming,
-                                                     "remove bullet")
+            GameState::Gaming)
+        .regist_update_system_to_state<MoveTank>(GameState::Gaming)
+        .regist_update_system_to_state<ShootBullet>(GameState::Gaming)
+        .regist_update_system_to_state<PlayAnimByVel>(GameState::Gaming)
+        .regist_update_system_to_state<RenderCollideBox>(GameState::Gaming)
+        .regist_update_system_to_state<RemoveBullet>(GameState::Gaming)
         .regist_update_system_to_state<RemoveFinishedBombAnim>(
-            GameState::Gaming, "remove finished bomb anim")
+            GameState::Gaming)
         .regist_update_system_to_state<CollideHandle<FallingStone, Bullet>>(
-            GameState::Gaming, "bullet collide handle")
+            GameState::Gaming)
         .regist_update_system_to_state<CollideHandle<FallingStone, Tank>>(
-            GameState::Gaming, "tank collide handle")
+            GameState::Gaming)
         .regist_update_system_to_state<CollideHandle<FallingStone, Land>>(
-            GameState::Gaming, "land collide handle")
-        .regist_update_system_to_state<UpdateScoreImage>(GameState::Gaming,
-                                                         "update score image")
-        .regist_exit_system_to_state<OnExitGaming>(GameState::Gaming,
-                                                   "on exit gaming")
+            GameState::Gaming)
+        .regist_update_system_to_state<UpdateScoreImage>(GameState::Gaming)
+        .regist_exit_system_to_state<OnExitGaming>(GameState::Gaming)
         // restart state
         .add_state(GameState::Restart)
-        .regist_enter_system_to_state<OnEnterRestart>(GameState::Restart,
-                                                      "enter restart")
-        .regist_exit_system_to_state<OnExitRestart>(GameState::Restart,
-                                                    "exit restart")
+        .regist_enter_system_to_state<OnEnterRestart>(GameState::Restart)
+        .regist_exit_system_to_state<OnExitRestart>(GameState::Restart)
         // start state
         .start_with_state(GameState::Welcome);
 

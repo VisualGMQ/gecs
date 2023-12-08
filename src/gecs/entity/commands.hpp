@@ -95,72 +95,39 @@ public:
         return *this;
     }
 
-    template <auto System>
-    auto& regist_startup_system(const std::string& name) {
-        reg_->template regist_startup_system<System>(name);
-        return *this;
-    }
-
-    template <auto System>
-    auto& regist_update_system(const std::string& name) {
-        reg_->template regist_update_system<System>(name);
-        return *this;
-    }
-
-    template <auto System>
-    auto& regist_shutdown_system(const std::string& name) {
-        reg_->template regist_shutdown_system<System>(name);
-        return *this;
-    }
-    
-    auto& remove_startup_system(const std::string& name) {
-        reg_->template remove_startup_system(name);
-        return *this;
-    }
- 
-    auto& remove_update_system(const std::string& name) {
-        reg_->template remove_update_system(name);
-        return *this;
-    }
- 
-    auto& remove_shutdown_system(const std::string& name) {
-        reg_->template remove_shutdown_system(name);
+    template <auto System, typename T>
+    auto& regist_exit_system_to_state(T state) {
+        reg_->template regist_exit_system_to_state<System>(state);
         return *this;
     }
 
     template <auto System, typename T>
-    auto& regist_exit_system_to_state(T state, const std::string& name) {
-        reg_->template regist_exit_system_to_state<System>(state, name);
+    auto& regist_enter_system_to_state(T state) {
+        reg_->template regist_enter_system_to_state<System>(state);
         return *this;
     }
 
     template <auto System, typename T>
-    auto& regist_enter_system_to_state(T state, const std::string& name) {
-        reg_->template regist_enter_system_to_state<System>(state, name);
+    auto& regist_update_system_to_state(T state) {
+        reg_->template regist_update_system_to_state<System>(state);
         return *this;
     }
 
     template <auto System, typename T>
-    auto& regist_update_system_to_state(T state, const std::string& name) {
-        reg_->template regist_update_system_to_state<System>(state, name);
+    auto& remove_update_system_from_state(T state) {
+        reg_->template remove_update_system_from_state<System>(state);
         return *this;
     }
 
-    template <typename T>
-    auto& remove_update_system_from_state(T state, const std::string& name) {
-        reg_->template remove_update_system_from_state(state, name);
+    template <auto System, typename T>
+    auto& remove_enter_system_from_state(T state) {
+        reg_->template remove_enter_system_from_state<System>(state);
         return *this;
     }
 
-    template <typename T>
-    auto& remove_enter_system_from_state(T state, const std::string& name) {
-        reg_->template remove_enter_system_from_state(state, name);
-        return *this;
-    }
-
-    template <typename T>
-    auto& remove_exit_system_from_state(T state, const std::string& name) {
-        reg_->template remove_exit_system_from_state(state, name);
+    template <auto System, typename T>
+    auto& remove_exit_system_from_state(T state) {
+        reg_->template remove_exit_system_from_state<System>(state);
         return *this;
     }
 

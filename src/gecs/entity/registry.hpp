@@ -51,7 +51,7 @@ public:
     using system_type = void (*)(self_type&);
 
     struct system_info {
-        std::string name;
+        void* raw_func_addr;
         system_type system;
     };
 
@@ -72,6 +72,12 @@ public:
         basic_event_dispatcher_wrapper<T, self_type>;
 
     using commands_type = basic_commands<owner_type>;
+
+    struct State final {
+        system_container_type on_enter;
+        system_container_type on_update;
+        system_container_type on_exit;
+    };
 
     template <typename Type>
     struct storage_for_by_mutable {
@@ -324,30 +330,33 @@ public:
     }
 
     template <auto System>
-    auto& regist_startup_system(const std::string& name) noexcept {
-        return regist_system_for<System>(startup_systems_, name);
+    auto& regist_startup_system() noexcept {
+        return regist_system_for<System>(startup_systems_);
     }
 
     template <auto System>
-    auto& regist_update_system(const std::string& name) noexcept {
-        return regist_system_for<System>(update_systems_, name);
+    auto& regist_update_system() noexcept {
+        return regist_system_for<System>(update_systems_);
     }
 
     template <auto System>
-    auto& regist_shutdown_system(const std::string& name) noexcept {
-        return regist_system_for<System>(shutdown_systems_, name);
+    auto& regist_shutdown_system() noexcept {
+        return regist_system_for<System>(shutdown_systems_);
     }
 
-    void remove_startup_system(const std::string& name) noexcept {
-        remove_system_from(startup_systems_, name);
+    template <auto System>
+    void remove_startup_system() noexcept {
+        remove_system_from<System>(startup_systems_);
     }
 
-    void remove_update_system(const std::string& name) noexcept {
-        remove_system_from(update_systems_, name);
+    template <auto System>
+    void remove_update_system() noexcept {
+        remove_system_from<System>(update_systems_);
     }
 
-    void remove_shutdown_system(const std::string& name) noexcept {
-        remove_system_from(shutdown_systems_, name);
+    template <auto System>
+    void remove_shutdown_system() noexcept {
+        remove_system_from<System>(shutdown_systems_);
     }
 
     template <typename T>
@@ -360,14 +369,16 @@ public:
     }
 
     template <auto System, typename T>
-    auto& regist_exit_system_to_state(T value,
-                                      const std::string& name) noexcept {
-        if (auto it =
-                states_.find(static_cast<std::underlying_type_t<T>>(value));
-            it != states_.end()) {
-            it->second.on_exit.emplace_back(system_info{
-                name, internal::system_constructor<
-                          self_type>::template construct<System>()});
+    auto& regist_exit_system_to_state(T value) noexcept {
+        auto state = static_cast<std::underlying_type_t<T>>(value);
+        if (auto it = states_.find(state); it != states_.end()) {
+            cached_systems_.emplace_back(cached_system{
+                cached_system::Type::Shutdown, cached_system::Operation::Add,
+                state,
+                system_info{(void*)System,
+                            internal::system_constructor<
+                            self_type>::template construct<System>()}
+            });
         } else {
             GECS_ASSERT(false, "state not exists");
         }
@@ -375,14 +386,16 @@ public:
     }
 
     template <auto System, typename T>
-    auto& regist_update_system_to_state(T value,
-                                        const std::string& name) noexcept {
-        if (auto it =
-                states_.find(static_cast<std::underlying_type_t<T>>(value));
-            it != states_.end()) {
-            it->second.on_update.emplace_back(system_info{
-                name, internal::system_constructor<
-                          self_type>::template construct<System>()});
+    auto& regist_update_system_to_state(T value) noexcept {
+        auto state = static_cast<std::underlying_type_t<T>>(value);
+        if (auto it = states_.find(state); it != states_.end()) {
+            cached_systems_.emplace_back(cached_system{
+                cached_system::Type::Update, cached_system::Operation::Add,
+                state,
+                system_info{(void*)System,
+                            internal::system_constructor<
+                            self_type>::template construct<System>()}
+            });
         } else {
             GECS_ASSERT(false, "state not exists");
         }
@@ -391,13 +404,16 @@ public:
 
     template <auto System, typename T>
     auto& regist_enter_system_to_state(T value,
-                                       const std::string& name) noexcept {
-        if (auto it =
-                states_.find(static_cast<std::underlying_type_t<T>>(value));
-            it != states_.end()) {
-            it->second.on_enter.emplace_back(system_info{
-                name, internal::system_constructor<
-                          self_type>::template construct<System>()});
+                                       const std::string& name = "") noexcept {
+        auto state = static_cast<std::underlying_type_t<T>>(value);
+        if (auto it = states_.find(state); it != states_.end()) {
+            cached_systems_.emplace_back(cached_system{
+                cached_system::Type::Startup, cached_system::Operation::Add,
+                state,
+                system_info{(void*)System,
+                            internal::system_constructor<
+                            self_type>::template construct<System>()}
+            });
         } else {
             GECS_ASSERT(false, "state not exists");
         }
@@ -406,33 +422,46 @@ public:
 
     template <auto System, typename T>
     auto& remove_exit_system_from_state(T value,
-                                      const std::string& name) noexcept {
-        if (auto it =
-                states_.find(static_cast<std::underlying_type_t<T>>(value));
-            it != states_.end()) {
-            remove_system_from(it->second.on_exit, name);
+                                        const std::string& name) noexcept {
+        auto state = static_cast<std::underlying_type_t<T>>(value);
+        if (auto it = states_.find(state); it != states_.end()) {
+            cached_systems_.emplace_back(
+                cached_system{cached_system::Type::Shutdown,
+                              cached_system::Operation::Remove, state,
+                              internal::system_constructor<
+                                  self_type>::template construct<System>()});
         }
         return *this;
     }
 
     template <auto System, typename T>
     auto& remove_update_system_from_state(T value,
-                                        const std::string& name) noexcept {
-        if (auto it =
-                states_.find(static_cast<std::underlying_type_t<T>>(value));
-            it != states_.end()) {
-            remove_system_from(it->second.on_update, name);
+                                          const std::string& name) noexcept {
+        auto state = static_cast<std::underlying_type_t<T>>(value);
+        if (auto it = states_.find(state); it != states_.end()) {
+            cached_systems_.emplace_back(cached_system{
+                cached_system::Type::Update, cached_system::Operation::Remove,
+                state,
+                system_info{(void*)System,
+                            internal::system_constructor<
+                            self_type>::template construct<System>()}
+            });
         }
         return *this;
     }
 
     template <auto System, typename T>
     auto& remove_enter_system_from_state(T value,
-                                       const std::string& name) noexcept {
-        if (auto it =
-                states_.find(static_cast<std::underlying_type_t<T>>(value));
-            it != states_.end()) {
-            remove_system_from(it->second.on_enter, name);
+                                         const std::string& name) noexcept {
+        auto state = static_cast<std::underlying_type_t<T>>(value);
+        if (auto it = states_.find(state); it != states_.end()) {
+            cached_systems_.emplace_back(cached_system{
+                cached_system::Type::Startup, cached_system::Operation::Remove,
+                state,
+                system_info{(void*)System,
+                            internal::system_constructor<
+                            self_type>::template construct<System>()}
+            });
         }
         return *this;
     }
@@ -448,15 +477,23 @@ public:
     }
 
     void startup() noexcept {
-        for (auto& [_, sys] : startup_systems_) {
-            sys(*this);
+        int i = 0;
+        while (i < startup_systems_.size()) {
+            startup_systems_[i].system(*this);
+            i++;
         }
 
-        if (cur_state_) {
-            for (auto& [_, enter] : states_[cur_state_.value()].on_enter) {
+        deal_all_cached_systems();
+
+        if (auto it =
+                cur_state_ ? states_.find(cur_state_.value()) : states_.end();
+            it != states_.end()) {
+            for (auto& [_, enter] : it->second.on_enter) {
                 enter(*this);
             }
         }
+
+        deal_all_cached_systems();
     }
 
     void update() noexcept {
@@ -464,11 +501,17 @@ public:
             sys(*this);
         }
 
-        if (cur_state_) {
-            for (auto& [_, update] : states_[cur_state_.value()].on_update) {
+        deal_all_cached_systems();
+
+        if (auto it =
+                cur_state_ ? states_.find(cur_state_.value()) : states_.end();
+            it != states_.end()) {
+            for (auto& [_, update] : it->second.on_update) {
                 update(*this);
             }
         }
+
+        deal_all_cached_systems();
 
         for (auto& dispatcher : event_dispatchers_) {
             dispatcher->trigger_cached();
@@ -482,11 +525,15 @@ public:
     }
 
     void shutdown() noexcept {
-        if (cur_state_) {
-            for (auto& [_, exit] : states_[cur_state_.value()].on_exit) {
+        if (auto it =
+                cur_state_ ? states_.find(cur_state_.value()) : states_.end();
+            it != states_.end()) {
+            for (auto& [_, exit] : it->second.on_exit) {
                 exit(*this);
             }
         }
+
+        deal_all_cached_systems();
 
         for (auto& [_, sys] : shutdown_systems_) {
             sys(*this);
@@ -499,17 +546,11 @@ public:
         return *this;
     }
 
-    auto& startup_systems() const {
-        return startup_systems_;
-    }
+    auto& startup_systems() const { return startup_systems_; }
 
-    auto& update_systems() const {
-        return update_systems_;
-    }
+    auto& update_systems() const { return update_systems_; }
 
-    auto& shutdown_systems() const {
-        return shutdown_systems_;
-    }
+    auto& shutdown_systems() const { return shutdown_systems_; }
 
     template <typename T>
     auto& state(T state) const {
@@ -550,16 +591,6 @@ public:
     }
 
 private:
-    struct State final {
-        system_container_type on_enter;
-        system_container_type on_update;
-        system_container_type on_exit;
-    };
-
-    std::unordered_map<uint32_t, State> states_;
-    std::optional<uint32_t> cur_state_;
-    std::optional<uint32_t> will_change_state_;
-
     struct TypeInfo final {
         config::type_info type_info;
         GECS_ANY (*convert_to_any)(self_type&, entity_type);
@@ -572,9 +603,26 @@ private:
         }
     };
 
-    using type_info_container_type = std::vector<TypeInfo>;
+    struct cached_system final {
+        enum class Type {
+            Startup,
+            Update,
+            Shutdown,
+        } type;
+        enum class Operation {
+            Add,
+            Remove,
+        } operation;
+        std::optional<int> state;
+        system_info sys_info;
+    };
 
+    using type_info_container_type = std::vector<TypeInfo>;
     owner_type* owner_;
+
+    std::unordered_map<uint32_t, State> states_;
+    std::optional<uint32_t> cur_state_;
+    std::optional<uint32_t> will_change_state_;
 
     pool_container_type pools_;
     type_info_container_type type_infos_;
@@ -583,6 +631,9 @@ private:
     system_container_type startup_systems_;
     system_container_type update_systems_;
     system_container_type shutdown_systems_;
+
+    std::vector<cached_system> cached_systems_;
+
     event_dispatcher_container event_dispatchers_;
 
     template <size_t N>
@@ -610,27 +661,90 @@ private:
             }
         }
 
+        deal_all_cached_systems();
+
         cur_state_ = state;
         for (auto& [_, enter] : states_[cur_state_.value()].on_enter) {
             enter(*this);
         }
+
+        deal_all_cached_systems();
     }
 
-    void remove_system_from(system_container_type& systems,
-                            const std::string& name) noexcept {
-        systems.erase(std::remove_if(
-                          systems.begin(), systems.end(),
-                          [&](const system_info& s) { return s.name == name; }),
+    void remove_system_from(system_container_type& systems, void* sys) {
+        systems.erase(std::remove_if(systems.begin(), systems.end(),
+                                     [=](const system_info& s) {
+                                         return s.raw_func_addr == (void*)sys;
+                                     }),
                       systems.end());
     }
 
     template <auto System>
-    auto& regist_system_for(system_container_type& systems,
-                            const std::string& name) {
-        systems.emplace_back(
-            system_info{name, internal::system_constructor<
-                                  self_type>::template construct<System>()});
+    void remove_system_from(system_container_type& systems) noexcept {
+        remove_system_from(systems, (void*)System);
+    }
+
+    template <auto System>
+    auto& regist_system_for(system_container_type& systems) {
+        systems.emplace_back(system_info{
+            (void*)System, internal::system_constructor<
+                               self_type>::template construct<System>()});
         return *this;
+    }
+
+    void deal_all_cached_systems() {
+        for (auto& cache : cached_systems_) {
+            deal_cached_system(cache);
+        }
+        cached_systems_.clear();
+    }
+
+    void deal_cached_system(const cached_system& cache) {
+        system_container_type* systems = nullptr;
+        if (cache.state) {
+            if (auto it = states_.find(cache.state.value());
+                it != states_.end()) {
+                State* state = &it->second;
+                switch (cache.type) {
+                    case cached_system::Type::Startup:
+                        systems = &state->on_enter;
+                        break;
+                    case cached_system::Type::Update:
+                        systems = &state->on_update;
+                        break;
+                    case cached_system::Type::Shutdown:
+                        systems = &state->on_exit;
+                        break;
+                }
+            }
+        } else {
+            switch (cache.type) {
+                case cached_system::Type::Startup:
+                    systems = &startup_systems_;
+                    break;
+                case cached_system::Type::Update:
+                    systems = &update_systems_;
+                    break;
+                case cached_system::Type::Shutdown:
+                    systems = &shutdown_systems_;
+                    break;
+            }
+        }
+
+        operate_system(cache.operation, cache.sys_info, *systems);
+    }
+
+    void operate_system(typename cached_system::Operation op,
+                        const system_info& info,
+                        system_container_type& systems) {
+        switch (op) {
+            case cached_system::Operation::Add:
+                systems.emplace_back(info);
+                break;
+            case cached_system::Operation::Remove:
+                remove_system_from(systems, info.raw_func_addr);
+                break;
+        }
     }
 };
 
