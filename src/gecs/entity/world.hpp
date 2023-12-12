@@ -22,9 +22,20 @@ public:
         }
     }
 
+    template <typename T>
+    auto res() const {
+        return resource<T>{};
+    }
+
+    template <typename T>
+    auto res_mut() const {
+        return resource<gecs::mut<T>>{};
+    }
+
     void startup() noexcept {
         if (!cur_registry_) {
-            GECS_ASSERT(!registries_.empty(), "you must create a scene before run app");
+            GECS_ASSERT(!registries_.empty(),
+                        "you must create a scene before run app");
             cur_registry_ = &registries_.begin()->second;
         }
 
@@ -40,9 +51,7 @@ public:
         }
     }
 
-    void shutdown() noexcept {
-        cur_registry_->shutdown();
-    }
+    void shutdown() noexcept { cur_registry_->shutdown(); }
 
     bool switch_registry(const std::string& name) noexcept {
         if (auto it = registries_.find(name); it == registries_.end()) {
@@ -52,9 +61,7 @@ public:
         }
     }
 
-    registry_type* cur_registry() noexcept {
-        return cur_registry_;
-    }
+    registry_type* cur_registry() noexcept { return cur_registry_; }
 
 private:
     registry_container registries_;

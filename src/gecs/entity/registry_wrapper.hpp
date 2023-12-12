@@ -24,13 +24,11 @@ public:
         return reg_->template has<T>(entity);
     }
 
-    bool has(entity_type entity,
-             const config::type_info& type_info) const noexcept {
+    bool has(entity_type entity, const config::type_info& type_info) const noexcept {
         return reg_->has(entity, type_info);
     }
 
-    GECS_ANY get_mut(entity_type entity,
-                     const config::type_info& type_info) noexcept {
+    GECS_ANY get_mut(entity_type entity, const config::type_info& type_info) noexcept {
         return reg_->get_mut(entity, type_info);
     }
 
@@ -39,7 +37,9 @@ public:
         return reg_->template get<Type>(entity);
     }
 
-    auto commands() const noexcept { return reg_->commands(); }
+    auto commands() const noexcept {
+        return reg_->commands();
+    }
 
     template <typename Type>
     Type& get_mut(entity_type entity) noexcept {
@@ -48,13 +48,22 @@ public:
 
     auto& entities() const noexcept { return reg_->entities(); }
 
-    const auto& typeinfos() const noexcept { return reg_->typeinfos(); }
+    const auto& typeinfos() const noexcept {
+        return reg_->typeinfos();
+    }
 
-    const auto& pools() const noexcept { return reg_->pools(); }
+    const auto& pools() const noexcept {
+        return reg_->pools();
+    }
 
     template <typename T>
     auto res() noexcept {
         return reg_->template res<T>();
+    }
+
+    template <typename T>
+    auto res_mut() noexcept {
+        return reg_->template res_mut<T>();
     }
 
 private:

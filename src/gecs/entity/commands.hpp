@@ -95,42 +95,6 @@ public:
         return *this;
     }
 
-    template <auto System, typename T>
-    auto& regist_exit_system_to_state(T state) {
-        reg_->template regist_exit_system_to_state<System>(state);
-        return *this;
-    }
-
-    template <auto System, typename T>
-    auto& regist_enter_system_to_state(T state) {
-        reg_->template regist_enter_system_to_state<System>(state);
-        return *this;
-    }
-
-    template <auto System, typename T>
-    auto& regist_update_system_to_state(T state) {
-        reg_->template regist_update_system_to_state<System>(state);
-        return *this;
-    }
-
-    template <auto System, typename T>
-    auto& remove_update_system_from_state(T state) {
-        reg_->template remove_update_system_from_state<System>(state);
-        return *this;
-    }
-
-    template <auto System, typename T>
-    auto& remove_enter_system_from_state(T state) {
-        reg_->template remove_enter_system_from_state<System>(state);
-        return *this;
-    }
-
-    template <auto System, typename T>
-    auto& remove_exit_system_from_state(T state) {
-        reg_->template remove_exit_system_from_state<System>(state);
-        return *this;
-    }
-
 private:
     WorldT* world_;
     registry_type* reg_;
