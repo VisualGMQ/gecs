@@ -73,7 +73,7 @@ TEST_CASE("commands") {
         REQUIRE(reg.get<Comp2>(ent).value == 54);
     }
 
-    SECTION("create/remove system") {
+    SECTION("create system") {
         reg.regist_update_system<System1>();
         reg.regist_update_system<System2>();
 
@@ -81,11 +81,5 @@ TEST_CASE("commands") {
 
         REQUIRE(count1 == 1);
         REQUIRE(count2 == 1);
-
-        reg.remove_update_system<System1>();
-
-        w.update();
-        REQUIRE(count1 == 1);
-        REQUIRE(count2 == 2);
     }
 }

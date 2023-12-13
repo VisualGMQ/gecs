@@ -244,7 +244,7 @@ public:
     }
 
     //! @warning remove all payloads
-    void release() noexcept {
+    void clear() noexcept {
         size_t i = 0;
         allocator_type allocator{get_allocator()};
         while (i < base_type::size()) {
@@ -263,7 +263,7 @@ public:
     }
 
     basic_storage(const config::type_info& type_info = {}): type_info_(type_info) {}
-    ~basic_storage() { release(); }
+    ~basic_storage() { clear(); }
 
     //! @brief use quick sort to sort payloads and packed array
     template <typename Compare>
@@ -374,6 +374,8 @@ public:
 
     auto& packed() const noexcept { return base_type::packed(); }
     auto& packed() noexcept { return base_type::packed(); }
+
+    void clear() { return base_type::clear(); }
 
 private:
     size_type length_ = 0;

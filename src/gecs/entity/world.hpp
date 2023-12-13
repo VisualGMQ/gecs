@@ -32,6 +32,11 @@ public:
         return resource<gecs::mut<T>>{};
     }
 
+    template <typename T>
+    void remove_res() const {
+        internal::resource_cache<T>::instance().remove();
+    }
+
     void startup() noexcept {
         if (!cur_registry_) {
             GECS_ASSERT(!registries_.empty(),
@@ -58,6 +63,12 @@ public:
             return false;
         } else {
             will_switch_registry_ = &it->second;
+        }
+    }
+
+    void destroy_all_entities() {
+        for (auto&& [name, reg] : registries_) {
+            reg.destroy_all_entities();
         }
     }
 

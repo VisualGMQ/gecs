@@ -100,6 +100,11 @@ public:
         }
     }
 
+    void destroy_all_entities() {
+        entities_.clear();
+        pools_.clear();
+    }
+
     bool alive(EntityT entity) const noexcept {
         return entities_.contain(entity);
     }
@@ -257,6 +262,11 @@ public:
     template <typename T>
     auto res_mut() noexcept {
         return resource<gecs::mut<T>>{};
+    }
+
+    template <typename T>
+    void remove_res() {
+        internal::resource_cache<T>::instance().remove();
     }
 
     const auto& pools() const noexcept {

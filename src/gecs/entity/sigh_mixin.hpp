@@ -51,6 +51,10 @@ public:
         underlying_type::remove(entity);
     }
 
+    void clear() {
+        underlying_type::clear();
+    }
+
 private:
     sigh_type construction_;
     sigh_type update_;
@@ -78,6 +82,10 @@ public:
     void remove(entity_type entity) noexcept {
         destruction_.trigger(entity);
         underlying_type::remove(entity);
+    }
+
+    void clear() {
+        underlying_type::clear();
     }
 
 private:
