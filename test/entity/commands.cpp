@@ -33,6 +33,7 @@ void System2() {
 
 TEST_CASE("commands") {
     w.regist_registry("gaming");
+    w.start_with("gaming");
     w.startup();
     auto& reg = *w.cur_registry();
     auto cmds = reg.commands();
