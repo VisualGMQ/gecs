@@ -486,6 +486,16 @@ public:
         }
     }
 
+    template <typename T>
+    void call_system() {
+        (internal::system_constructor<self_type>::template construct<T>())();
+    }
+
+    template <typename T>
+    auto construct_system() {
+        return internal::system_constructor<self_type>::template construct<T>();
+    }
+
 private:
     struct State final {
         system_container_type on_enter;
@@ -503,7 +513,7 @@ private:
 
         template <typename T>
         static GECS_ANY convert_type_to_any(self_type& reg,
-                                                      entity_type entity) {
+                                            entity_type entity) {
             auto ref = GECS_MAKE_ANY_REF(reg.get_mut<T>(entity));
             return ref;
         }
@@ -524,7 +534,7 @@ private:
 
     template <size_t N>
     std::optional<size_t> minimal_idx(pool_container_reference& pools,
-                       const std::array<size_t, N>& indices) {
+                                      const std::array<size_t, N>& indices) {
         size_t minimal = std::numeric_limits<size_t>::max();
         size_t min_idx = 0;
 

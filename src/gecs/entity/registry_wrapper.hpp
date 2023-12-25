@@ -66,6 +66,21 @@ public:
         return reg_->template res_mut<T>();
     }
 
+    template <typename T>
+    void call_system() {
+        reg_->template call_system<T>();
+    }
+
+    template <typename T>
+    auto construct_system() {
+        return reg_->template construct_system<T>();
+    }
+
+    template <typename T>
+    auto event_dispatcher() {
+        return reg_->template event_dispatcher<T>();
+    }
+
 private:
     registry_type* reg_;
 };
