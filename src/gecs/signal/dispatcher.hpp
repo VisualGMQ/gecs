@@ -35,8 +35,10 @@ public:
     }
 
     void trigger_cached(Args... args) noexcept {
-        for (auto& cache : cache_) {
-            trigger(cache, std::forward<Args>(args)...);
+        while (!cache_.empty()) {
+            trigger(cache_[0], std::forward<Args>(args)...);
+            std::swap(cache_[0], cache_.back());
+            cache_.pop_back();
         }
     }
 
