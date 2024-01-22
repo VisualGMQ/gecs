@@ -2,6 +2,7 @@
 
 #include "sigh.hpp"
 #include "sink.hpp"
+#include <memory>
 
 namespace gecs {
 
@@ -9,7 +10,7 @@ template <typename T, typename... Args>
 class dispatcher {
 public:
     using sigh_type = sigh<void(const T&, Args...)>;
-    using cache_container = std::vector<T>;
+    using cache_container = std::vector<std::unique_ptr<T>>;
     using size_type = typename sigh_type::size_type;
     using event_type = T;
 
@@ -31,12 +32,12 @@ public:
     //! @brief cache event
     template <typename... Ts>
     void enqueue(Ts&&... args) noexcept {
-        cache_.emplace_back(std::forward<Ts>(args)...);
+        cache_.emplace_back(std::make_unique<T>(std::forward<Ts>(args)...));
     }
 
     void trigger_cached(Args... args) noexcept {
         while (!cache_.empty()) {
-            trigger(cache_[0], std::forward<Args>(args)...);
+            trigger(*cache_[0], std::forward<Args>(args)...);
             std::swap(cache_[0], cache_.back());
             cache_.pop_back();
         }
