@@ -104,48 +104,104 @@ constexpr bool is_braces_constructible_v =
     internal::is_braces_constructible<T, Ts...>::value;
 
 template <typename T>
-auto extrac_pod_members(T&& obj) {
+auto extract_pod_members(T&& obj) {
     using type = std::decay_t<T>;
     using t = internal::any_type;
-
-    if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t, t, t,
-                                            t>) {
-        auto&& [p1, p2, p3, p4, p5, p6, p7, p8, p10] = obj;
-        return std::make_tuple(p1, p2, p3, p4, p5, p6, p7, p8, p10);
-    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t, t,
-                                                   t>) {
-        auto&& [p1, p2, p3, p4, p5, p6, p7, p8, p9] = obj;
-        return std::make_tuple(p1, p2, p3, p4, p5, p6, p7, p8, p9);
-    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t,
-                                                   t>) {
-        auto&& [p1, p2, p3, p4, p5, p6, p7, p8] = obj;
-        return std::make_tuple(p1, p2, p3, p4, p5, p6, p7, p8);
-    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t>) {
-        auto&& [p1, p2, p3, p4, p5, p6, p7] = obj;
-        return std::make_tuple(p1, p2, p3, p4, p5, p6, p7);
-    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t>) {
-        auto&& [p1, p2, p3, p4, p5, p6] = obj;
-        return std::make_tuple(p1, p2, p3, p4, p5, p6);
-    } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t>) {
-        auto&& [p1, p2, p3, p4, p5] = obj;
-        return std::make_tuple(p1, p2, p3, p4, p5);
-    } else if constexpr (is_braces_constructible_v<type, t, t, t, t>) {
-        auto&& [p1, p2, p3, p4] = obj;
-        return std::make_tuple(p1, p2, p3, p4);
-    } else if constexpr (is_braces_constructible_v<type, t, t, t>) {
-        auto&& [p1, p2, p3] = obj;
-        return std::make_tuple(p1, p2, p3);
-    } else if constexpr (is_braces_constructible_v<type, t, t>) {
-        auto&& [p1, p2] = obj;
-        return std::make_tuple(p1, p2);
-    } else if constexpr (is_braces_constructible_v<type, t>) {
-        auto&& [p1] = obj;
-        return std::make_tuple(p1);
+    constexpr bool is_rvalue_ref = std::is_rvalue_reference_v<decltype(obj)>;
+    if constexpr (is_rvalue_ref) {
+        if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t, t, t,
+                                                t>) {
+            auto&& [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2), std::move(p3),
+                                   std::move(p4), std::move(p5), std::move(p6),
+                                   std::move(p7), std::move(p8), std::move(p9),
+                                   std::move(p10));
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t,
+                                                       t, t, t>) {
+            auto&& [p1, p2, p3, p4, p5, p6, p7, p8, p9] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2), std::move(p3),
+                                   std::move(p4), std::move(p5), std::move(p6),
+                                   std::move(p7), std::move(p8), std::move(p9));
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t,
+                                                       t, t>) {
+            auto&& [p1, p2, p3, p4, p5, p6, p7, p8] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2), std::move(p3),
+                                   std::move(p4), std::move(p5), std::move(p6),
+                                   std::move(p7), std::move(p8));
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t,
+                                                       t>) {
+            auto&& [p1, p2, p3, p4, p5, p6, p7] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2), std::move(p3),
+                                   std::move(p4), std::move(p5), std::move(p6),
+                                   std::move(p7));
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t,
+                                                       t>) {
+            auto&& [p1, p2, p3, p4, p5, p6] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2), std::move(p3),
+                                   std::move(p4), std::move(p5), std::move(p6));
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t>) {
+            auto&& [p1, p2, p3, p4, p5] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2), std::move(p3),
+                                   std::move(p4), std::move(p5));
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t>) {
+            auto&& [p1, p2, p3, p4] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2), std::move(p3),
+                                   std::move(p4));
+        } else if constexpr (is_braces_constructible_v<type, t, t, t>) {
+            auto&& [p1, p2, p3] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2), std::move(p3));
+        } else if constexpr (is_braces_constructible_v<type, t, t>) {
+            auto&& [p1, p2] = obj;
+            return std::forward_as_tuple(std::move(p1), std::move(p2));
+        } else if constexpr (is_braces_constructible_v<type, t>) {
+            auto&& [p1] = obj;
+            return std::forward_as_tuple(std::move(p1));
+        } else {
+            GECS_ASSERT(false, "member number in POD > 10! Please reduce "
+                               "members or split them");
+            return std::forward_as_tuple();
+        }
     } else {
-        GECS_ASSERT(
-            false,
-            "member number in POD > 10! Please reduce members or split them");
-        return std::make_tuple();
+        if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t, t, t, t,
+                                                t>) {
+            auto&& [p1, p2, p3, p4, p5, p6, p7, p8, p10] = obj;
+            return std::forward_as_tuple(p1, p2, p3, p4, p5, p6, p7, p8, p10);
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t,
+                                                       t, t, t>) {
+            auto&& [p1, p2, p3, p4, p5, p6, p7, p8, p9] = obj;
+            return std::forward_as_tuple(p1, p2, p3, p4, p5, p6, p7, p8, p9);
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t,
+                                                       t, t>) {
+            auto&& [p1, p2, p3, p4, p5, p6, p7, p8] = obj;
+            return std::forward_as_tuple(p1, p2, p3, p4, p5, p6, p7, p8);
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t, t,
+                                                       t>) {
+            auto&& [p1, p2, p3, p4, p5, p6, p7] = obj;
+            return std::forward_as_tuple(p1, p2, p3, p4, p5, p6, p7);
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t,
+                                                       t>) {
+            auto&& [p1, p2, p3, p4, p5, p6] = obj;
+            return std::forward_as_tuple(p1, p2, p3, p4, p5, p6);
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t, t>) {
+            auto&& [p1, p2, p3, p4, p5] = obj;
+            return std::forward_as_tuple(p1, p2, p3, p4, p5);
+        } else if constexpr (is_braces_constructible_v<type, t, t, t, t>) {
+            auto&& [p1, p2, p3, p4] = obj;
+            return std::forward_as_tuple(p1, p2, p3, p4);
+        } else if constexpr (is_braces_constructible_v<type, t, t, t>) {
+            auto&& [p1, p2, p3] = obj;
+            return std::forward_as_tuple(p1, p2, p3);
+        } else if constexpr (is_braces_constructible_v<type, t, t>) {
+            auto&& [p1, p2] = obj;
+            return std::forward_as_tuple(p1, p2);
+        } else if constexpr (is_braces_constructible_v<type, t>) {
+            auto&& [p1] = obj;
+            return std::forward_as_tuple(p1);
+        } else {
+            GECS_ASSERT(false, "member number in POD > 10! Please reduce "
+                               "members or split them");
+            return std::forward_as_tuple();
+        }
     }
 }
 
@@ -153,7 +209,7 @@ namespace internal {
 
 template <typename Tuple, typename F, std::size_t... Indices>
 void do_tuple_foreach(Tuple&& t, F&& f, std::index_sequence<Indices...>) {
-    (f(std::get<Indices>(t)), ...);
+    (f(std::get<Indices>(std::forward<Tuple>(t))), ...);
 }
 
 }  // namespace internal

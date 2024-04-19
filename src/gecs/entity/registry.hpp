@@ -279,12 +279,13 @@ public:
     
     template <typename T>
     void emplace_bundle(entity_type entity, T&& bundle) {
-        auto members = extrac_pod_members(std::forward<T>(bundle));
+        auto&& members = extract_pod_members(std::forward<T>(bundle));
 
-        tuple_foreach(members, [&](auto&& elem) {
-            using type = std::decay_t<decltype(elem)>;
-            this->emplace<type>(entity, elem);
-        });
+        tuple_foreach(
+            std::forward<decltype(members)>(members), [&](auto&& elem) {
+                using type = std::decay_t<decltype(elem)>;
+                this->emplace<type>(entity, std::forward<decltype(elem)>(elem));
+            });
     }
 
     template <typename T>

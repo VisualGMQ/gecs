@@ -23,7 +23,7 @@ TEST_CASE("extract pod members") {
     static_assert(gecs::is_braces_constructible_v<POD, int, float, double, std::string>);
     static_assert(!gecs::is_braces_constructible_v<POD, float, float, double, std::string>);
     static_assert(!gecs::is_braces_constructible_v<POD, double, std::string>);
-    auto members = gecs::extrac_pod_members(pod);
+    auto members = gecs::extract_pod_members(pod);
 
     REQUIRE(std::tuple_size_v<decltype(members)> == 4);
 }

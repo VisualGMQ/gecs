@@ -417,7 +417,7 @@ public:
     }
 
     template <typename T>
-    auto& sort_by() {
+    auto& sort() {
         sort_by<T>(std::less<T>{});
         return *this;
     }
