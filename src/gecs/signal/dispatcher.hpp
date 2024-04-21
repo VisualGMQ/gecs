@@ -17,16 +17,28 @@ public:
     virtual ~dispatcher() = default;
 
     auto sink() noexcept { return ::gecs::sink{sigh_}; }
+    auto immediatly_sink() noexcept { return ::gecs::sink{immediate_sigh_}; }
 
-    //! @brief trigger all delegates immediately
+    //! @brief trigger all cached delegates immediately
     void trigger(const T& event, Args... args) noexcept {
         sigh_.trigger(event, std::forward<Args>(args)...);
+    }
+
+    //! @brief trigger all immediatly delegates immediately
+    void trigger_immediatly_events(const T& event, Args... args) noexcept {
+        immediate_sigh_.trigger(event, std::forward<Args>(args)...);
     }
 
     //! @brief trigger all delegates by cached events
     void update(Args... args) noexcept {
         trigger_cached(std::forward<Args>(args)...);
         clear_cache();
+    }
+
+    //! @brief trigger all immediatly delegates and cache this event
+    void happend(const T& event, Args... args) noexcept {
+        trigger_immediatly_events(event, std::forward<Args>(args)...);
+        enqueue(event);
     }
 
     //! @brief cache event
@@ -51,8 +63,11 @@ public:
 
     bool empty() const noexcept { return sigh_.empty(); }
 
+    bool is_immediatly_events_empty() const noexcept { return immediate_sigh_.empty(); }
+
 private:
-    sigh_type sigh_;
+    sigh_type sigh_;            // sighs for cached trigger
+    sigh_type immediate_sigh_;  // sighs for immediate trigger
     cache_container cache_;
 };
 

@@ -17,24 +17,6 @@ class basic_event_dispatcher_wrapper;
 
 namespace internal {
 
-template <typename T, typename... Ts>
-struct event_dispatcher_singlton;
-
-template <typename T, typename... Ts>
-struct dispatcher_loader final {
-    using type = event_dispatcher_singlton<T, Ts...>;
-
-    type operator()() const noexcept { return type{}; }
-};
-
-template <typename T, typename... Ts>
-struct event_dispatcher_singlton
-    : public dispatcher<T, Ts...>,
-      public singlton<event_dispatcher_singlton<T, Ts...>, false,
-                      internal::dispatcher_loader<T, Ts...>> {
-    using dispatcher_type = dispatcher<T, Ts...>;
-};
-
 template <typename T, typename RegistryT>
 struct event_dispatcher_sink final {
     using basic_event_dispatcher_type =
@@ -70,7 +52,7 @@ private:
 
 }  // namespace internal
 
-struct event_dispatcher_base { 
+struct event_dispatcher_base {
     virtual void trigger_cached() = 0;
     virtual void clear_cache() = 0;
     virtual ~event_dispatcher_base() = default;
@@ -82,10 +64,12 @@ struct event_dispatcher_type_for {
 };
 
 template <typename T, typename RegistryT>
-using event_dispatcher_type_for_t = typename event_dispatcher_type_for<T, RegistryT>::type;
+using event_dispatcher_type_for_t =
+    typename event_dispatcher_type_for<T, RegistryT>::type;
 
 template <typename T, typename RegistryT>
-class basic_event_dispatcher final : public dispatcher<T, RegistryT&>, public event_dispatcher_base {
+class basic_event_dispatcher final : public dispatcher<T, RegistryT&>,
+                                     public event_dispatcher_base {
 public:
     using dispatcher_type = dispatcher<T, RegistryT&>;
     using size_type = typename dispatcher_type::size_type;
@@ -94,8 +78,10 @@ public:
 
     basic_event_dispatcher(RegistryT& reg) : reg_(&reg) {}
 
-    auto sink() noexcept {
-        return sink_type(dispatcher_type::sink());
+    auto sink() noexcept { return sink_type(dispatcher_type::sink()); }
+
+    auto immediatly_sink() noexcept {
+        return sink_type(dispatcher_type::immediatly_sink());
     }
 
     //! @brief trigger all delegates immediately
@@ -103,10 +89,18 @@ public:
         return dispatcher_type::trigger(event, *reg_);
     }
 
-    //! @brief trigger all delegates by cached events
-    void update() noexcept {
-        return dispatcher_type::update(*reg_);
+    //! @brief trigger all immediatly delegates immediately
+    void trigger_immediatly_events(const T& event) noexcept {
+        return dispatcher_type::trigger_immediatly_events(event, *reg_);
     }
+
+    //! @brief trigger all immediatly delegates and cache this event
+    void happend(const T& event) noexcept {
+        dispatcher_type::happend(event, *reg_);
+    }
+
+    //! @brief trigger all delegates by cached events
+    void update() noexcept { return dispatcher_type::update(*reg_); }
 
     void trigger_cached() noexcept override {
         dispatcher_type::trigger_cached(*reg_);
@@ -115,24 +109,19 @@ public:
     //! @brief cache event
     template <typename... Args>
     void enqueue(Args&&... args) noexcept {
-        dispatcher_type::enqueue(
-            std::forward<Args>(args)...);
+        dispatcher_type::enqueue(std::forward<Args>(args)...);
     }
 
-    void clear() noexcept {
-        dispatcher_type::clear();
-    }
+    void clear() noexcept { dispatcher_type::clear(); }
 
-    void clear_cache() noexcept override {
-        dispatcher_type::clear_cache();
-    }
+    void clear_cache() noexcept override { dispatcher_type::clear_cache(); }
 
-    size_type size() const noexcept {
-        return dispatcher_type::size();
-    }
+    size_type size() const noexcept { return dispatcher_type::size(); }
 
-    bool empty() const noexcept {
-        return dispatcher_type::empty();
+    bool empty() const noexcept { return dispatcher_type::empty(); }
+
+    bool is_immediatly_events_empty() const noexcept {
+        return dispatcher_type::is_immediatly_events_empty();
     }
 
 private:
@@ -149,10 +138,21 @@ public:
     using event_type = typename event_dispatcher_type::event_type;
     using sink_type = typename event_dispatcher_type::sink_type;
 
-    basic_event_dispatcher_wrapper(event_dispatcher_type& event_dispatcher) : event_dispatcher_(event_dispatcher) {}
+    basic_event_dispatcher_wrapper(event_dispatcher_type& event_dispatcher)
+        : event_dispatcher_(event_dispatcher) {}
 
-    auto sink() noexcept {
-        return event_dispatcher_.sink();
+    auto sink() noexcept { return event_dispatcher_.sink(); }
+
+    auto immediatly_sink() noexcept { return event_dispatcher_.immediatly_sink(); }
+
+    //! @brief trigger all immediatly delegates immediately
+    void trigger_immediatly_events(const T& event) noexcept {
+        return event_dispatcher_.trigger_immediatly_events(event);
+    }
+
+    //! @brief trigger all immediatly delegates and cache this event
+    void happend(const T& event) noexcept {
+        return event_dispatcher_.happend(event);
     }
 
     //! @brief trigger all delegates immediately
@@ -161,13 +161,9 @@ public:
     }
 
     //! @brief trigger all delegates by cached events
-    void update() noexcept {
-        return event_dispatcher_.update();
-    }
+    void update() noexcept { event_dispatcher_.update(); }
 
-    void trigger_cached() noexcept {
-        event_dispatcher_.trigger_cached();
-    }
+    void trigger_cached() noexcept { event_dispatcher_.trigger_cached(); }
 
     //! @brief cache event
     template <typename... Args>
@@ -175,20 +171,16 @@ public:
         event_dispatcher_.enqueue(std::forward<Args>(args)...);
     }
 
-    void clear() noexcept {
-        event_dispatcher_.clear();
-    }
+    void clear() noexcept { event_dispatcher_.clear(); }
 
-    void clear_cache() noexcept {
-        event_dispatcher_.clear_cache();
-    }
+    void clear_cache() noexcept { event_dispatcher_.clear_cache(); }
 
-    size_type size() const noexcept {
-        return event_dispatcher_.size();
-    }
+    size_type size() const noexcept { return event_dispatcher_.size(); }
 
-    bool empty() const noexcept {
-        return event_dispatcher_.empty();
+    bool empty() const noexcept { return event_dispatcher_.empty(); }
+
+    bool is_immediatly_events_empty() const noexcept {
+        return event_dispatcher_.is_immediatly_events_empty();
     }
 
 private:

@@ -69,6 +69,7 @@ public:
             return false;
         } else {
             will_switch_registry_ = it;
+            return true;
         }
     }
 
@@ -91,7 +92,8 @@ private:
         if (cur_registry_ != registries_.end()) {
             cur_registry_->second.shutdown();
         }
-        will_switch_registry_->second.startup();
+        cur_registry_ = will_switch_registry_;
+        cur_registry_->second.startup();
     }
 
     void do_switch_registry_no_shutdown() noexcept {
