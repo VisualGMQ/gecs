@@ -474,7 +474,7 @@ public:
     }
 
     template <auto System, auto AfterSystem, typename T>
-    auto& regist_shutdown_system_to_state_before(T value) noexcept {
+    auto& regist_exit_system_to_state_before(T value) noexcept {
         regist_system_before_in_state<System, AfterSystem>(shutdown_systems_,
                                                            value);
         // TODO:
@@ -483,7 +483,7 @@ public:
     }
 
     template <auto System, auto BeforeSystem, typename T>
-    auto& regist_shutdown_system_to_state_after(T value) noexcept {
+    auto& regist_exit_system_to_state_after(T value) noexcept {
         regist_system_after_in_state<System, BeforeSystem>(shutdown_systems_,
                                                             value);
         // TODO:
@@ -553,8 +553,8 @@ public:
 
     void shutdown() noexcept {
         for (auto sys : shutdown_systems_) {
-            if (sys.is_enabled && !sys.id_ ||
-                (sys.id_.value() == cur_state_)) {
+            if (sys.is_enabled && (!sys.id_ ||
+                sys.id_.value() == cur_state_)) {
                 sys.fn(*this);
             }
         }
@@ -604,9 +604,19 @@ public:
         return internal::system_constructor<self_type>::template construct<T>();
     }
 
+    template <typename T>
+    std::optional<T> cur_state() const {
+        static_assert(std::is_enum_v<T>, "T must enum");
+        if (cur_state_) {
+            return static_cast<T>(cur_state_.value());
+        } else {
+            return std::nullopt;
+        }
+    }
+
 private:
-    std::optional<uint32_t> cur_state_;
-    std::optional<uint32_t> will_change_state_;
+    std::optional<int> cur_state_;
+    std::optional<int> will_change_state_;
 
     struct TypeInfo final {
         config::type_info type_info;
@@ -692,7 +702,7 @@ private:
 
         auto it = std::find_if(
             systems.begin(), systems.end(),
-            [](auto& system) { return system.fn == wrapped_before_system; });
+            [=](auto& system) { return system.fn == wrapped_before_system; });
 
         if (it != systems.end()) {
             it++;

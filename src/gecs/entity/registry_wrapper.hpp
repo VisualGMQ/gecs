@@ -81,6 +81,11 @@ public:
         return reg_->template event_dispatcher<T>();
     }
 
+    template <typename T>
+    auto cur_state() const {
+        return reg_->template cur_state<T>();
+    }
+
 private:
     registry_type* reg_;
 };
