@@ -403,6 +403,21 @@ public:
     }
 
     template <auto System>
+    auto& remove_startup_system() noexcept {
+        return remove_system<System>(startup_systems_);
+    }
+
+    template <auto System>
+    auto& remove_update_system() noexcept {
+        return remove_system<System>(update_systems_);
+    }
+
+    template <auto System>
+    auto& remove_shutdown_system() noexcept {
+        return remove_system<System>(shutdown_systems_);
+    }
+
+    template <auto System>
     auto& regist_update_system() noexcept {
         update_systems_.emplace_back(internal::system_constructor<
                                      self_type>::template construct<System>());
@@ -748,12 +763,22 @@ private:
 
     template <auto System>
     auto& enable_system(bool enable, system_container_type& systems) noexcept {
+        auto wrapped_system = internal::system_constructor<self_type>::template construct<System>();
         for (auto& system : systems) {
-            if (system.fn == System) {
+            if (system.fn == wrapped_system) {
                 system.is_enabled = enable;
                 break;
             }
         }
+        return *this;
+    }
+
+    template <auto System>
+    auto& remove_system(system_container_type& systems) noexcept {
+        auto wrapped_system = internal::system_constructor<self_type>::template construct<System>();
+        systems.erase(std::remove_if(systems.begin(), systems.end(), [=](auto& system){
+            return system.fn == wrapped_system;
+        }), systems.end());
         return *this;
     }
 };
