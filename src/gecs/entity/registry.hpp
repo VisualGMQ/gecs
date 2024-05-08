@@ -534,6 +534,12 @@ public:
     }
 
     template <typename T>
+    auto& startup_with_state(T state) {
+        cur_state_ = static_cast<std::underlying_type_t<T>>(state);
+        return *this;
+    }
+
+    template <typename T>
     void switch_state(T state) {
         will_change_state_ = static_cast<std::underlying_type_t<T>>(state);
     }
@@ -541,7 +547,7 @@ public:
     void startup() noexcept {
         for (int i = 0 ; i < startup_systems_.size(); i++) {
             auto& sys = startup_systems_[i];
-            if (sys.is_enabled && !sys.id_) {
+            if (sys.is_enabled && (!sys.id_ || sys.id_ == cur_state_)) {
                 sys.fn(*this);
             }
         }

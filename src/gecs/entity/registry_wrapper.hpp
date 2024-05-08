@@ -37,6 +37,15 @@ public:
         return reg_->template get<Type>(entity);
     }
 
+    template <typename Type>
+    const Type* try_get(entity_type entity) const noexcept {
+        if (has<Type>(entity)) {
+            return &reg_->template get<Type>(entity);
+        } else {
+            return nullptr;
+        }
+    }
+
     auto commands() const noexcept {
         return reg_->commands();
     }
