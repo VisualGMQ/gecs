@@ -197,7 +197,7 @@ template <typename EntityT, typename PoolContainer, size_t N>
 bool do_check_only_satisfied(EntityT entity, const PoolContainer& pools,
                 const std::array<size_t, N>& requireIndices) {
     for (int i = 0; i < pools.size(); i++) {
-        if (pools[i]->contain(entity)) {
+        if (pools[i] && pools[i]->contain(entity)) {
             bool found = false;
             for (auto idx : requireIndices) {
                 if (idx == i) {

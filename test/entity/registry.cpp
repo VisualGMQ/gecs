@@ -95,15 +95,24 @@ TEST_CASE("registry") {
         auto entity4 = reg.create(); // 4
         auto entity5 = reg.create(); // 5
         auto entity6 = reg.create(); // 6
+        
+        REQUIRE(static_cast<uint32_t>(entity0) == 0);
+        REQUIRE(static_cast<uint32_t>(entity1) == 1);
+        REQUIRE(static_cast<uint32_t>(entity2) == 2);
+        REQUIRE(static_cast<uint32_t>(entity3) == 3);
+        REQUIRE(static_cast<uint32_t>(entity4) == 4);
+        REQUIRE(static_cast<uint32_t>(entity5) == 5);
+        REQUIRE(static_cast<uint32_t>(entity6) == 6);
 
         reg.destroy(entity2);
         auto entity1048578 = reg.create();
+        REQUIRE(static_cast<uint32_t>(entity1048578) == 1048578);
         reg.destroy(entity3);
         auto entity1048579 = reg.create();
+        REQUIRE(static_cast<uint32_t>(entity1048579) == 1048579);
         reg.destroy(entity4);
         reg.destroy(entity5);
         auto entity1048580 = reg.create();
-        reg.destroy(entity6);
-        auto lastEntity = reg.create();
+        REQUIRE(static_cast<uint32_t>(entity1048580) == 1048581);
     }
 }
