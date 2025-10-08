@@ -2,6 +2,8 @@
 
 `gecs` 是一个参考了[EnTT](https://github.com/skypjack/entt)源码结构，和[Bevy-ECS](https://bevyengine.org/)API的用于游戏开发的ECS系统。采用C++17。
 
+V1.0.0版本使用EnTT一样的SparseSet为核心数据结构。
+
 ## 使用方法
 
 `demo`下有一个完整的例子
